@@ -4,20 +4,18 @@
   "description": "A MERN stack application with multiple features, focusing on mobile usability.",
   "main": "server/server.js",
   "scripts": {
-    "start server": "node server/server.js",
-    "client": "npm start --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon server/server.js"
+    "start server": "node server.js",
+    "dev": "npm run server",
+    "server": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "mongoose": "^5.10.9",
+    "body-parser": "^1.19.0",
     "cors": "^2.8.5",
-    "body-parser": "^1.19.0"
+    "express": "^4.17.1",
+    "mongoose": "^5.10.9"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4",
-    "concurrently": "^5.3.0"
+    "nodemon": "^2.0.4"
   },
   "keywords": [],
   "author": "",

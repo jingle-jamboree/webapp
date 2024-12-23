@@ -53,25 +53,16 @@ my-mern-app
    ```
    cd my-mern-app
    ```
-3. Install dependencies for both client and server:
+3. Install dependencies for the project:
    ```
-   cd client
-   npm install
-   cd ../server
-   npm install
+   npm install && npm install --prefix client && npm install --prefix server
    ```
 
 ### Running the Application
 
-1. Start the server:
+1. In the root project directory, run:
    ```
-   cd server
-   node server.js
-   ```
-2. In a new terminal, start the client:
-   ```
-   cd client
-   npm start
+   npm run dev
    ```
 
 ### Usage

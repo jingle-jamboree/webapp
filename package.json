@@ -1,0 +1,13 @@
+{
+  "name": "webapp",
+  "version": "1.0.0",
+  "description": "This is a MERN stack application designed primarily for mobile users. The app features a \"Lost and Found\" section where users can post found items and search for lost items.",
+  "scripts": {
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm start\" "
+  },
+  "author": "jingle-jamboree",
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
