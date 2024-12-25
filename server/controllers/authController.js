@@ -61,9 +61,16 @@ const signup = async (username, password) => {
  * @returns {string} JWT token
  */
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '1h',
-  });
+  return jwt.sign(
+    { userId },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: '15m',  // Short-lived access token
+      algorithm: 'HS256',
+      issuer: 'jiit-tools',
+      audience: 'jiit-webapp'
+    }
+  );
 };
 
 /**
@@ -93,8 +100,30 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user._id);
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: '7d',
+    const refreshToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_REFRESH_SECRET,
+      {
+        expiresIn: '30d', // 30 day refresh token
+        algorithm: 'HS256',
+        issuer: 'jiit-tools',
+        audience: 'jiit-webapp'
+      }
+    );
+
+    // Set token cookies with proper flags
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
     return res.status(200).json({
@@ -122,8 +151,20 @@ export const refreshToken = (req, res) => {
   }
 
   try {
-    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, {
+      issuer: 'jiit-tools',
+      audience: 'jiit-webapp',
+      algorithms: ['HS256']
+    });
+
     const newToken = generateToken(payload.userId);
+
+    res.cookie('access_token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000
+    });
 
     return res.status(200).json({ token: newToken });
   } catch (error) {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusIcon, ChevronDownIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { PlusIcon, ChevronDownIcon, CalendarIcon, ClockIcon, ArrowUpIcon } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
 import TagInput from './TagInput';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:5000';
 
 const LostAndFound = () => {
+    const { handleAuthError, isAuthError } = useAuth();
     // Get current date and time in required format
     const getCurrentDateTime = () => {
         const now = new Date();
@@ -13,6 +15,18 @@ const LostAndFound = () => {
             date: now.toISOString().split('T')[0],
             time: now.toTimeString().slice(0, 5)
         };
+    };
+
+    // Add formatDate helper function
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+        }).replace(/,\s*\d{4}/, ''); // Remove year
     };
 
     const [items, setItems] = useState([]);
@@ -24,7 +38,7 @@ const LostAndFound = () => {
         whenFoundTime: getCurrentDateTime().time,
         whereFound: '',
         whereToFind: '',
-        tags: [] // Change to array instead of string
+        tags: []
     });
     const [isCompact, setIsCompact] = useState(false);
     const headerRef = useRef(null);
@@ -46,6 +60,7 @@ const LostAndFound = () => {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const itemsContainerRef = useRef(null);
     const [itemCount, setItemCount] = useState(0);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     useEffect(() => {
         fetchInitialItems();
@@ -61,13 +76,24 @@ const LostAndFound = () => {
                     'Accept': 'application/json'
                 }
             });
-            if (!response.ok) throw new Error('Failed to fetch items');
+            if (!response.ok) {
+                const error = await response.json();
+                if (isAuthError(error)) {
+                    handleAuthError();
+                    return;
+                }
+                throw new Error(error.message || 'Failed to fetch items');
+            }
             const data = await response.json();
             setItems(data.items || []);
             setLastItemId(data.lastId);
             setItemCount(data.count);
             setHasMore(data.hasMore);
         } catch (err) {
+            if (isAuthError(err)) {
+                handleAuthError();
+                return;
+            }
             setError(err.message);
         } finally {
             setIsLoading(false);
@@ -114,6 +140,11 @@ const LostAndFound = () => {
 
         try {
             const token = localStorage.getItem('token');
+            if (!token) {
+                handleAuthError();
+                return;
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/lost-and-found/items`, {
                 method: 'POST',
                 headers: {
@@ -121,11 +152,16 @@ const LostAndFound = () => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify(formData),
             });
 
             if (!response.ok) {
                 const error = await response.json();
+                if (isAuthError(error)) {
+                    handleAuthError();
+                    return;
+                }
                 throw new Error(error.message || 'Failed to post item');
             }
 
@@ -138,10 +174,15 @@ const LostAndFound = () => {
                 whenFoundTime: getCurrentDateTime().time,
                 whereFound: '',
                 whereToFind: '',
-                tags: [] // Clear tags too
+                tags: []
             });
         } catch (err) {
+            if (isAuthError(err)) {
+                handleAuthError();
+                return;
+            }
             setError(err.message);
+            console.error('Submit error:', err);
         }
     };
 
@@ -198,9 +239,10 @@ const LostAndFound = () => {
         };
     }, []);
 
-    // Add scroll handler for FAB
+    // Add scroll handler for FAB and scroll-to-top button
     useEffect(() => {
         const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 500);
             setIsButtonCompact(window.scrollY > 100);
         };
 
@@ -213,7 +255,14 @@ const LostAndFound = () => {
         setTimeout(() => {
             setIsFormVisible(false);
             setIsClosing(false);
-        }, 200); // Match animation duration
+        }, 200);
+    };
+
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     };
 
     // Custom date/time input wrappers
@@ -256,8 +305,8 @@ const LostAndFound = () => {
     useEffect(() => {
         const options = {
             root: null,
-            rootMargin: '100px', // Increased margin to trigger earlier
-            threshold: 0.1 // Lower threshold to trigger more reliably
+            rootMargin: '100px',
+            threshold: 0.1
         };
 
         const observer = new IntersectionObserver(([entry]) => {
@@ -276,10 +325,10 @@ const LostAndFound = () => {
                 observer.unobserve(container);
             }
         };
-    }, [isFetchingMore, hasMore, itemCount]); // Add itemCount as dependency
+    }, [isFetchingMore, hasMore, itemCount]);
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto pb-5">
             {/* Grid layout to maintain spacing */}
             <div className="grid grid-rows-[auto_1fr]">
                 {/* Header spacer that maintains expanded size */}
@@ -389,15 +438,17 @@ const LostAndFound = () => {
                             <div className="space-y-4">
                                 {filteredItems.map((item) => (
                                     <div key={item._id} className="bg-gray-700 rounded-lg p-4 transition duration-300">
-                                        <h4 className="text-lg font-medium mb-2">{item.name}</h4>
+                                        <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
+                                            {item.name}
+                                        </h4>
                                         <div className="space-y-2 text-gray-300">
                                             <p>Found at: {item.whereFound}</p>
                                             <p>Collect from: {item.whereToFind}</p>
                                             <p>Found on: {new Date(item.whenFound).toLocaleDateString()} at {item.whenFoundTime}</p>
                                             <div className="flex items-center gap-2 text-sm text-gray-400">
-                                                <span>Posted by: {item.reportedBy?.name || 'Unknown'}</span>
+                                                <span className="truncate">Posted by: {item.reportedBy?.name || 'Unknown'}</span>
                                                 <span>•</span>
-                                                <span>{new Date(item.createdAt).toLocaleString()}</span>
+                                                <span className="whitespace-nowrap">{formatDate(item.createdAt)}</span>
                                             </div>
                                             {item.tags && item.tags.length > 0 && (
                                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -418,11 +469,11 @@ const LostAndFound = () => {
                             </div>
 
                             {/* Loading indicator */}
-                            <div ref={itemsContainerRef} className="py-4 text-center">
+                            <div ref={itemsContainerRef} className="pt-5 text-center">
                                 {isFetchingMore ? (
                                     <div className="text-gray-400">Loading more items...</div>
                                 ) : !hasMore && (
-                                    <div className="text-gray-500">No More Items.</div>
+                                    <div className="text-gray-500">No More Items</div>
                                 )}
                             </div>
                         </>
@@ -431,9 +482,26 @@ const LostAndFound = () => {
 
                 {/* Floating Action Button */}
                 <motion.div
-                    className="fixed bottom-6 right-6 z-50"
+                    className="fixed bottom-6 right-6 z-50 space-y-4"
                     initial={false}
                 >
+                    {/* Scroll to Top Button */}
+                    <motion.button
+                        onClick={scrollToTop}
+                        className="bg-gray-800 hover:bg-gray-700 h-14 w-14 rounded-full shadow-lg
+                            flex items-center justify-center transition-all duration-200"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{
+                            opacity: showScrollTop ? 1 : 0,
+                            y: showScrollTop ? 0 : 20,
+                            pointerEvents: showScrollTop ? 'auto' : 'none'
+                        }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <ArrowUpIcon className="h-6 w-6 text-gray-300" />
+                    </motion.button>
+
+                    {/* Existing FAB */}
                     <motion.button
                         onClick={() => setIsFormVisible(true)}
                         className="bg-gradient-to-r from-orange-700 to-amber-700 floating-action-button

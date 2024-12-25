@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 const PORT = process.env.BACKEND_PORT || 5000;
 const URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:' + PORT;
 
+// Add this utility function at the top level
+export const isAuthError = (error) => {
+    return error?.message?.toLowerCase().includes('token') ||
+        error?.message?.toLowerCase().includes('authentication');
+};
 
 const whoami = async () => {
     const token = localStorage.getItem('token');
@@ -65,6 +70,12 @@ export const AuthProvider = ({ children }) => {
 
     const [isLoading, setIsLoading] = useState(!skipAuth);
     const [loginError, setLoginError] = useState(null);
+
+    // Add new method to handle auth errors
+    const handleAuthError = () => {
+        logout();
+        window.location.href = '/login';
+    };
 
     useEffect(() => {
         if (skipAuth) return;
@@ -164,7 +175,15 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, login, logout, isLoading, loginError }}
+            value={{
+                user,
+                login,
+                logout,
+                isLoading,
+                loginError,
+                handleAuthError,
+                isAuthError
+            }}
         >
             {children}
         </AuthContext.Provider>
