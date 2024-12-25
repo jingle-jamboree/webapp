@@ -6,6 +6,32 @@ import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:5000';
 
+const cardVariants = {
+    hidden: {
+        opacity: 0,
+        y: 20
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.4,
+            ease: [0.25, 0.1, 0.25, 1]
+        }
+    }
+};
+
+const containerVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1
+        }
+    }
+};
+
 const LostAndFound = () => {
     const { handleAuthError, isAuthError } = useAuth();
     // Get current date and time in required format
@@ -328,7 +354,12 @@ const LostAndFound = () => {
     }, [isFetchingMore, hasMore, itemCount]);
 
     return (
-        <div className="max-w-4xl mx-auto pb-5">
+        <motion.div
+            className="max-w-4xl mx-auto pb-5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
             {/* Grid layout to maintain spacing */}
             <div className="grid grid-rows-[auto_1fr]">
                 {/* Header spacer that maintains expanded size */}
@@ -432,12 +463,37 @@ const LostAndFound = () => {
                     </h3>
 
                     {isLoading ? (
-                        <div className="text-center py-8 text-gray-400">Loading...</div>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-8 text-gray-400"
+                        >
+                            <div className="inline-flex items-center gap-2">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"
+                                />
+                                Loading...
+                            </div>
+                        </motion.div>
                     ) : (
                         <>
-                            <div className="space-y-4">
+                            <motion.div
+                                variants={containerVariants}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className="space-y-4"
+                            >
                                 {filteredItems.map((item) => (
-                                    <div key={item._id} className="bg-gray-700 rounded-lg p-4 transition duration-300">
+                                    <motion.div
+                                        key={item._id}
+                                        variants={cardVariants}
+                                        className="bg-gray-700 rounded-lg p-4 transition duration-300
+                                            hover:bg-gray-600/50 hover:shadow-lg hover:scale-[1.02]
+                                            hover:shadow-black/20"
+                                    >
                                         <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
                                             {item.name}
                                         </h4>
@@ -464,18 +520,10 @@ const LostAndFound = () => {
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
-                            </div>
-
-                            {/* Loading indicator */}
-                            <div ref={itemsContainerRef} className="pt-5 text-center">
-                                {isFetchingMore ? (
-                                    <div className="text-gray-400">Loading more items...</div>
-                                ) : !hasMore && (
-                                    <div className="text-gray-500">No More Items</div>
-                                )}
-                            </div>
+                            </motion.div>
+                            {/* ...existing loading indicators... */}
                         </>
                     )}
                 </div>
@@ -629,7 +677,7 @@ const LostAndFound = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </motion.div>
 
     );
 };
