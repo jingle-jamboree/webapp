@@ -1,13 +1,25 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const { StudentLogin, GetPersonalInfo, GetHostelInfo } = require('jsjiit-server');
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { StudentLogin, GetPersonalInfo, GetHostelInfo } from 'jsjiit-server';
 
+/**
+ * Capitalizes first letter of each word in a string
+ * @param {string} str - Input string
+ * @returns {string} Capitalized string
+ */
 const capitalize = (str) => {
-  return str.toLowerCase().replace(/\b\w/g, function(char) {
+  return str.toLowerCase().replace(/\b\w/g, function (char) {
     return char.toUpperCase();
   });
 }
+
+/**
+ * Creates a new user account after validating with JIIT web portal
+ * @param {string} username - Enrollment number
+ * @param {string} password - User's password
+ * @returns {Promise<boolean>} Success status
+ */
 const signup = async (username, password) => {
   const session = await StudentLogin(username, password);
   const info = await GetPersonalInfo(session);
@@ -43,19 +55,30 @@ const signup = async (username, password) => {
   return true;
 }
 
+/**
+ * Generates JWT token for authentication
+ * @param {string} userId - MongoDB user ID
+ * @returns {string} JWT token
+ */
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: '1h',
   });
 };
 
-exports.login = async (req, res) => {
-  const { enroll, password } = req.body;
-  if (!enroll || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' });
-  }
-
+/**
+ * Handles user login with JIIT credentials
+ * Creates new account if user doesn't exist
+ */
+export const login = async (req, res) => {
   try {
+    const { enroll, password } = req.body;
+    if (!enroll || !password) {
+      return res.status(400).json({
+        message: 'Email and password are required.'
+      });
+    }
+
     const user = await User.findOne({ enroll });
     if (!user) {
       const webportalAuth = await signup(enroll, password);
@@ -74,14 +97,24 @@ exports.login = async (req, res) => {
       expiresIn: '7d',
     });
 
-    return res.status(200).json({ message: 'Login successful.', token, refreshToken });
+    return res.status(200).json({
+      message: 'Login successful.',
+      token,
+      refreshToken
+    });
   } catch (error) {
     console.error('Error during login:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({
+      message: error.message || 'Internal server error.'
+    });
   }
 };
 
-exports.refreshToken = (req, res) => {
+/**
+ * Refreshes access token using refresh token
+ * @returns {Object} New access token
+ */
+export const refreshToken = (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
@@ -98,3 +131,5 @@ exports.refreshToken = (req, res) => {
     return res.status(401).json({ message: 'Invalid or expired refresh token.' });
   }
 };
+
+export { signup, generateToken };

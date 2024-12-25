@@ -69,3 +69,5 @@ debug.log
 # Package files
 package-lock.json
 yarn.lock
+
+/uploads

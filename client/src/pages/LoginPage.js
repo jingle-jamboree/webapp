@@ -5,14 +5,22 @@ import { useAuth } from '../context/AuthContext';
 const LoginPage = () => {
     const [enrollmentNo, setEnrollmentNo] = useState('');
     const [password, setPassword] = useState('');
-    const { login } = useAuth();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { login, loginError } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (enrollmentNo && password) {
-            await login(enrollmentNo, password);
-            navigate('/', { replace: true });
+        if (!enrollmentNo || !password || isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            const success = await login(enrollmentNo, password);
+            if (success) {
+                navigate('/', { replace: true });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -35,6 +43,12 @@ const LoginPage = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
+                    {loginError && (
+                        <div className="p-3 text-sm rounded-lg bg-red-500/10 border border-red-500/50 text-red-500">
+                            {loginError}
+                        </div>
+                    )}
+
                     <div className="space-y-6">
                         <div>
                             <label className="block text-gray-300 text-[13px] font-medium mb-1.5">
@@ -72,12 +86,14 @@ const LoginPage = () => {
 
                     <button
                         type="submit"
+                        disabled={isSubmitting}
                         className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 
                             hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg 
                             transition-all duration-300 text-[15px]
-                            hover:shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]"
+                            hover:shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]
+                            disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Sign In
+                        {isSubmitting ? 'Signing In...' : 'Sign In'}
                     </button>
                 </form>
             </div>
