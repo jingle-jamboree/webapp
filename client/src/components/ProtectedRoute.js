@@ -2,14 +2,17 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-    const { user } = useAuth();
-    const skipAuth = process.env.REACT_APP_SKIP_AUTH === 'true';
+  const { user, isLoading } = useAuth();
 
-    if (!user && !skipAuth) {
-        return <Navigate to="/login" replace />;
-    }
+  if (isLoading) {
+    return <div>Loading...</div>; 
+  }
 
-    return children;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

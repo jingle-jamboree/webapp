@@ -49,7 +49,7 @@ const Sidenav = ({ isOpen, onClose, user, onLogout }) => {
                     <div className="border-t border-white/10 pt-4 mt-4">
                         <div className="px-4 mb-2">
                             <div className="font-medium text-gray-200">{user?.name}</div>
-                            <div className="text-sm text-gray-400">{user?.enrollmentNo}</div>
+                            <div className="text-sm text-gray-400">{user?.enroll}</div>
                         </div>
                         <button
                             onClick={onLogout}

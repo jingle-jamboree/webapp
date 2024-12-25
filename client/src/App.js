@@ -8,8 +8,8 @@ import Layout from './components/Layout';
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -18,8 +18,8 @@ function App() {
             {/* ...other routes... */}
           </Route>
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
