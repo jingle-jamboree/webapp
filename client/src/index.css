@@ -81,8 +81,9 @@
     }
 
     .content-container {
-        @apply relative z-10 w-full min-h-screen isolate;
-        perspective: 1200px;
+        @apply relative z-10 w-full min-h-screen;
+        position: relative;
+        min-height: 100vh;
     }
 
     .header-shadow {
@@ -303,8 +304,7 @@
     }
 
     .page-content {
-        @apply w-full relative;
-        transform-style: preserve-3d;
+        @apply w-full;
     }
 
     /* Update hover classes to only apply on devices that support hover */
