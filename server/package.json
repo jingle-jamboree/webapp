@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A MERN stack application with multiple features, focusing on mobile usability.",
   "main": "server/server.js",
+  "type": "module",
   "scripts": {
     "start server": "node server.js",
     "dev": "npm run server",
