@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { PlusIcon, ChevronDownIcon, CalendarIcon, ClockIcon, ArrowUpIcon } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
-import TagInput from './TagInput';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:5000';
@@ -38,6 +37,101 @@ const containerVariants = {
     }
 };
 
+// Update the TagList component
+const TagList = ({ tags, maxVisible = 3, expandable = false }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const visibleTags = isExpanded ? tags : tags.slice(0, maxVisible);
+    const remainingCount = tags.length - maxVisible;
+    const hasMore = remainingCount > 0;
+
+    return (
+        <motion.div layout className="flex flex-wrap items-center gap-2">
+            <AnimatePresence mode="popLayout">
+                {visibleTags.map((tag, index) => (
+                    <motion.span
+                        key={tag}
+                        layout
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="px-3 py-1.5 bg-gray-800/50 rounded-full text-xs text-gray-300
+                                border border-gray-700/50 transition-colors whitespace-nowrap"
+                    >
+                        {tag}
+                    </motion.span>
+                ))}
+            </AnimatePresence>
+            {hasMore && expandable && (
+                <motion.button
+                    layout
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="px-3 py-1.5 bg-gray-800/30 rounded-full text-xs text-gray-400
+                            hover:bg-gray-700/50 transition-colors"
+                >
+                    {isExpanded ? 'Show less' : `+${remainingCount} more`}
+                </motion.button>
+            )}
+            {hasMore && !expandable && (
+                <motion.span
+                    layout
+                    className="text-xs text-gray-400"
+                >
+                    +{remainingCount} more
+                </motion.span>
+            )}
+        </motion.div>
+    );
+};
+
+// Add formatDate helper function
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+    }).replace(/,\s*\d{4}/, ''); // Remove year
+};
+
+// Add ItemCard component outside main component for memoization
+const ItemCard = memo(({ item, onClick }) => {
+    return (
+        <motion.div
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            layout
+            className="bg-gray-700 rounded-lg p-4 transition-colors duration-300
+                hover:bg-gray-600/50 cursor-pointer"
+            onClick={() => onClick(item)}
+        >
+            <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
+                {item.name}
+            </h4>
+            <div className="space-y-2 text-gray-300">
+                <p>Found at: {item.whereFound}</p>
+                <p>Collect from: {item.whereToFind}</p>
+                <p>Found on: {new Date(item.whenFound).toLocaleDateString()} at {item.whenFoundTime}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <span className="truncate">Posted by: {item.reportedBy?.name || 'Unknown'}</span>
+                    <span>•</span>
+                    <span className="whitespace-nowrap">{formatDate(item.createdAt)}</span>
+                </div>
+                {item.tags && item.tags.length > 0 && (
+                    <div className="mt-2">
+                        <TagList tags={item.tags} />
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+}, (prevProps, nextProps) => {
+    return prevProps.item._id === nextProps.item._id;
+});
+
 const LostAndFound = () => {
     const { handleAuthError, isAuthError } = useAuth();
     // Get current date and time in required format
@@ -49,41 +143,22 @@ const LostAndFound = () => {
         };
     };
 
-    // Add formatDate helper function
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: true
-        }).replace(/,\s*\d{4}/, ''); // Remove year
-    };
-
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({
-        name: '',
         whenFound: getCurrentDateTime().date,
         whenFoundTime: getCurrentDateTime().time,
+        description: '', // Changed from 'name' to 'description'
         whereFound: '',
-        whereToFind: '',
-        tags: []
+        whereToFind: ''
     });
     const [isCompact, setIsCompact] = useState(false);
-    const headerRef = useRef(null);
-    const headerContentRef = useRef(null);
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState({
-        name: '',
-        location: '',
-        date: '',
-        tags: ''
+        query: '',
+        date: ''
     });
-    const [isButtonVisible, setIsButtonVisible] = useState(true);
-    const lastScrollY = useRef(0);
     const [isClosing, setIsClosing] = useState(false);
     const [isButtonCompact, setIsButtonCompact] = useState(false);
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -93,6 +168,21 @@ const LostAndFound = () => {
     const itemsContainerRef = useRef(null);
     const [itemCount, setItemCount] = useState(0);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+
+    const MAX_DESCRIPTION_LENGTH = 300; // Add this constant
+
+    // Update CharacterCount styles for label alignment
+    const CharacterCount = ({ current, max }) => (
+        <span className={`text-xs transition-colors duration-200 ${current > max * 0.9
+            ? current >= max
+                ? 'text-red-400'
+                : 'text-amber-400'
+            : 'text-gray-500'
+            }`}>
+            {current}/{max}
+        </span>
+    );
 
     useEffect(() => {
         fetchInitialItems();
@@ -160,6 +250,9 @@ const LostAndFound = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if (name === 'description' && value.length > MAX_DESCRIPTION_LENGTH) {
+            return; // Don't update if exceeding limit
+        }
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -201,12 +294,11 @@ const LostAndFound = () => {
             setItems(prev => [newItem, ...prev]);
             handleCloseModal();
             setFormData({
-                name: '',
                 whenFound: getCurrentDateTime().date,
                 whenFoundTime: getCurrentDateTime().time,
+                description: '', // Reset description instead of name
                 whereFound: '',
-                whereToFind: '',
-                tags: []
+                whereToFind: ''
             });
         } catch (err) {
             if (isAuthError(err)) {
@@ -227,15 +319,15 @@ const LostAndFound = () => {
     };
 
     const filteredItems = items.filter(item => {
-        const matchName = item.name.toLowerCase().includes(searchQuery.name.toLowerCase());
-        const matchLocation = !searchQuery.location || item.whereFound.toLowerCase().includes(searchQuery.location.toLowerCase());
+        const searchTerms = searchQuery.query.toLowerCase().split(' ');
         const matchDate = !searchQuery.date || item.whenFound === searchQuery.date;
-        const matchTags = !searchQuery.tags || (
-            item.tags && item.tags.some(tag =>
-                tag.toLowerCase().includes(searchQuery.tags.toLowerCase())
-            )
-        );
-        return matchName && matchLocation && matchDate && matchTags;
+
+        return matchDate && searchTerms.every(term => (
+            item.name.toLowerCase().includes(term) ||
+            item.whereFound.toLowerCase().includes(term) ||
+            item.whereToFind.toLowerCase().includes(term) ||
+            (item.tags && item.tags.some(tag => tag.toLowerCase().includes(term)))
+        ));
     });
 
     useEffect(() => {
@@ -252,11 +344,6 @@ const LostAndFound = () => {
             }
         );
 
-        const headerElement = headerRef.current;
-        if (headerElement) {
-            observer.observe(headerElement);
-        }
-
         // Add scroll listener for initial scroll position
         const handleScroll = () => {
             setIsCompact(window.scrollY > 50);
@@ -264,9 +351,6 @@ const LostAndFound = () => {
         window.addEventListener('scroll', handleScroll);
 
         return () => {
-            if (headerElement) {
-                observer.unobserve(headerElement);
-            }
             window.removeEventListener('scroll', handleScroll);
         };
     }, []);
@@ -325,13 +409,6 @@ const LostAndFound = () => {
             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
         </div>
     );
-
-    const headerClasses = `fixed top-0 left-0 right-0 z-20 transition-all duration-500 ease-in-out
-        border-b border-white/5 backdrop-blur-sm
-        ${isCompact ? 'py-5 bg-[#0B0F1A]/60 border-opacity-100' : 'py-12 bg-transparent border-opacity-0'}`;
-
-    const titleClasses = `font-bold text-center gradient-text transition-all duration-500 ease-in-out
-        ${isCompact ? 'text-2xl' : 'text-4xl'}`;
 
     // Add intersection observer for infinite scroll
     useEffect(() => {
@@ -414,6 +491,57 @@ const LostAndFound = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Add new function to handle item click
+    const handleItemClick = (item) => {
+        setSelectedItem(item);
+    };
+
+    // Add modal transition variants
+    const modalVariants = {
+        hidden: {
+            opacity: 0,
+            scale: 0.95,
+            y: 10,
+        },
+        visible: {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                damping: 25,
+                stiffness: 350
+            }
+        },
+        exit: {
+            opacity: 0,
+            scale: 0.95,
+            y: 10,
+            transition: {
+                duration: 0.2,
+                ease: "easeOut"
+            }
+        }
+    };
+
+    const overlayVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                duration: 0.2,
+                ease: "easeOut"
+            }
+        },
+        exit: {
+            opacity: 0,
+            transition: {
+                duration: 0.2,
+                ease: "easeOut"
+            }
+        }
+    };
+
     return (
         <motion.div
             variants={pageVariants}
@@ -465,10 +593,10 @@ const LostAndFound = () => {
                         <div className="space-y-4">
                             <input
                                 type="text"
-                                name="name"
-                                value={searchQuery.name}
+                                name="query"
+                                value={searchQuery.query}
                                 onChange={handleSearchChange}
-                                placeholder="Search by item name"
+                                placeholder="Search items, locations, tags..."
                                 className="input-field mb-0"
                                 autoComplete="off"
                                 autoCorrect="off"
@@ -486,18 +614,6 @@ const LostAndFound = () => {
                                 className="overflow-hidden"
                             >
                                 <div className="space-y-4 pt-2">
-                                    <input
-                                        type="text"
-                                        name="location"
-                                        value={searchQuery.location}
-                                        onChange={handleSearchChange}
-                                        placeholder="Search by location"
-                                        className="input-field mb-0"
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="off"
-                                        spellCheck="false"
-                                    />
                                     <div className="relative">
                                         <CustomDateInput
                                             name="date"
@@ -508,18 +624,6 @@ const LostAndFound = () => {
                                             autoComplete="off"
                                         />
                                     </div>
-                                    <input
-                                        type="text"
-                                        name="tags"
-                                        value={searchQuery.tags}
-                                        onChange={handleSearchChange}
-                                        placeholder="Search by tags (e.g., wallet, black)"
-                                        className="input-field mb-0"
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="off"
-                                        spellCheck="false"
-                                    />
                                 </div>
                             </motion.div>
                         </div>
@@ -565,43 +669,11 @@ const LostAndFound = () => {
                                 className="space-y-4"
                             >
                                 {filteredItems.map((item) => (
-                                    <motion.div
+                                    <ItemCard
                                         key={item._id}
-                                        variants={cardVariants}
-                                        initial="hidden"
-                                        animate="visible"
-                                        exit="exit"
-                                        layout
-                                        className="bg-gray-700 rounded-lg p-4 transition-colors duration-300
-                                            hover:bg-gray-600/50"
-                                    >
-                                        <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
-                                            {item.name}
-                                        </h4>
-                                        <div className="space-y-2 text-gray-300">
-                                            <p>Found at: {item.whereFound}</p>
-                                            <p>Collect from: {item.whereToFind}</p>
-                                            <p>Found on: {new Date(item.whenFound).toLocaleDateString()} at {item.whenFoundTime}</p>
-                                            <div className="flex items-center gap-2 text-sm text-gray-400">
-                                                <span className="truncate">Posted by: {item.reportedBy?.name || 'Unknown'}</span>
-                                                <span>•</span>
-                                                <span className="whitespace-nowrap">{formatDate(item.createdAt)}</span>
-                                            </div>
-                                            {item.tags && item.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    {item.tags.map((tag, index) => (
-                                                        <span
-                                                            key={index}
-                                                            className="px-3 py-1.5 bg-gray-800/50 rounded-full text-xs text-gray-300
-                                                                    border border-gray-700/50 transition-colors"
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </motion.div>
+                                        item={item}
+                                        onClick={handleItemClick}
+                                    />
                                 ))}
                             </motion.div>
                         </AnimatePresence>
@@ -713,24 +785,24 @@ const LostAndFound = () => {
                                             </div>
                                         </div>
 
-                                        {/* Item details section */}
+                                        {/* Item details section - Updated to textarea */}
                                         <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-300">Item Details</label>
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                autoComplete="off"
-                                                value={formData.name}
+                                            <div className="flex justify-between items-center">
+                                                <label className="block text-sm font-medium text-gray-300">Item Description</label>
+                                                <CharacterCount
+                                                    current={formData.description.length}
+                                                    max={MAX_DESCRIPTION_LENGTH}
+                                                />
+                                            </div>
+                                            <textarea
+                                                name="description"  // Changed from 'name' to 'description'
+                                                value={formData.description}  // Changed from formData.name
                                                 onChange={handleInputChange}
-                                                placeholder="What was found? (Required)"
-                                                className="input-field input-field-required"
+                                                placeholder="Describe the item in detail&#10;(e.g., Black leather wallet with HDFC cards, student ID, and some cash)"
+                                                className="input-field input-field-required min-h-[120px] resize-none"
                                                 required
-                                            />
-                                            <TagInput
-                                                tags={formData.tags}
-                                                setTags={(newTags) => setFormData(prev => ({ ...prev, tags: newTags }))}
-                                                placeholder="Add descriptive tags (Optional)"
-                                                className="input-field-optional"
+                                                rows={4}
+                                                maxLength={MAX_DESCRIPTION_LENGTH}
                                             />
                                         </div>
 
@@ -763,6 +835,91 @@ const LostAndFound = () => {
                                             Post Found Item
                                         </button>
                                     </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Add Item Detail Modal */}
+            <AnimatePresence>
+                {selectedItem && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+                            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-black/50 z-[100]"
+                            onClick={() => setSelectedItem(null)}
+                        />
+                        <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{ duration: 0.2 }}
+                                className="w-full max-w-lg pointer-events-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-xl 
+                             border border-white/10">
+                                    <div className="p-6 border-b border-white/10">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="text-xl font-semibold text-blue-300">
+                                                Item Details
+                                            </h3>
+                                            <button
+                                                onClick={() => setSelectedItem(null)}
+                                                className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                                            >
+                                                <span className="sr-only">Close</span>
+                                                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414 1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="px-6 py-4 max-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h4 className="text-lg font-medium text-white">
+                                                    {selectedItem.name}
+                                                </h4>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400">Description</label>
+                                                <p className="text-gray-100 text-base leading-relaxed whitespace-pre-wrap">
+                                                    {selectedItem.description}
+                                                </p>
+                                            </div>
+                                            <div className="grid gap-4 text-gray-300">
+                                                <div className="space-y-1">
+                                                    <label className="text-sm text-gray-400">Found Location</label>
+                                                    <p>{selectedItem.whereFound}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-sm text-gray-400">Collection Location</label>
+                                                    <p>{selectedItem.whereToFind}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-sm text-gray-400">Found Date & Time</label>
+                                                    <p>{new Date(selectedItem.whenFound).toLocaleDateString()} at {selectedItem.whenFoundTime}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-sm text-gray-400">Posted By</label>
+                                                    <p>{selectedItem.reportedBy?.name || 'Unknown'}</p>
+                                                </div>
+                                                {selectedItem.tags && selectedItem.tags.length > 0 && (
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm text-gray-400">Tags</label>
+                                                        <TagList tags={selectedItem.tags} maxVisible={8} expandable={true} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
                         </div>

@@ -15,10 +15,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.17.1",
+    "groq": "^3.68.3",
+    "groq-sdk": "^0.9.1",
     "jsjiit-server": "^1.1.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
-    "mongoose": "^5.10.9"
+    "mongoose": "^5.10.9",
+    "natural": "^8.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"

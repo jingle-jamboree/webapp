@@ -1,18 +1,103 @@
-import { LostItem } from '../models/LostItem.js';
-import path from 'path';
+import LostAndFound from '../models/lostAndFoundModel.js';
+import natural from 'natural';
+import Groq from "groq-sdk";
+
+// Initialize Groq lazily when needed
+let groqClient = null;
+const getGroqClient = () => {
+    if (!groqClient && process.env.GROQ_API_KEY) {
+        groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    }
+    return groqClient;
+};
+
+const tokenizer = new natural.WordTokenizer();
+
+// Remove any direct env file loading
+// Remove dotenv import and config
 
 /**
  * Generates searchable tags from item details
  * @param {Object} item - Lost item object
  * @returns {string[]} Array of tags
  */
-const generateTags = (item) => {
-    const tags = new Set();
-    // Add item name words as tags
-    item.name.toLowerCase().split(' ').forEach(word => tags.add(word));
-    // Add location words as tags
-    item.whereFound.toLowerCase().split(' ').forEach(word => tags.add(word));
-    return Array.from(tags);
+const fallbackTagGeneration = (text) => {
+    // Combine all text fields
+    const details = text.toLowerCase();
+
+    // Tokenize and filter words
+    const tokens = tokenizer.tokenize(details);
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
+
+    // Filter unique meaningful words
+    const tags = [...new Set(tokens)]
+        .filter(word =>
+            word.length > 2 &&
+            !stopWords.has(word) &&
+            !/^\d+$/.test(word)
+        );
+
+    return tags.slice(0, 5); // Limit to 5 tags
+};
+
+const generateTitleAndTags = async (item) => {
+    const groq = getGroqClient();
+    if (!groq) {
+        console.log('Using fallback title generation (GROQ not available)');
+        return {
+            title: fallbackTitleGeneration(item),
+            tags: fallbackTagGeneration(item)
+        };
+    }
+
+    try {
+        const completion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: `The following description has been offered by a person for an item.
+                    Generate a short title for this item and a set of tags. the tags should be more than one and should be describing the object. Use appropriate capitalisation.
+                    The output should be in a json format with the following structure: {title:"<title>", tags:["tag1", "tag2", ...]}.
+                    Example titles: "Black wallet", "iPhone 12 Pro Max", "Boat Airdopes 155".
+                    Example tags: ["wallet", "purse", "black", "leather"], ["phone", "gold", "cracked"], ["TWS", "earbuds"].`,
+                },
+                {
+                    role: "user",
+                    content: `${item.name}`, //item.name is the description given by the user.
+                }
+            ],
+            model: "llama-3.1-8b-instant",
+            max_tokens: 1024,
+            top_p: 1,
+            stream: false,
+            response_format: {
+                type: "json_object"
+            },
+            stop: null
+        });
+        const response = JSON.parse(completion.choices[0]?.message?.content);
+        let title = response["title"].replace(/['"]/g, "") || fallbackTitleGeneration(item);
+        let tags = response["tags"] || fallbackTagGeneration(item);
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+        tags = tags.map(tag => tag.charAt(0).toUpperCase() + tag.slice(1));
+        return { title, tags };
+    } catch (error) {
+        console.error('Error with Groq API:', error);
+        return {
+            title: fallbackTitleGeneration(item),
+            tags: fallbackTagGeneration(item)
+        };
+    }
+};
+
+// Helper function for fallback title generation
+const fallbackTitleGeneration = (item) => {
+    const timeStr = item.whenFoundTime.split(':')[0] > 11 ? 'PM' : 'AM';
+    const dateStr = new Date(item.whenFound).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+    });
+    return `${item.name} - Found at ${item.whereFound} (${dateStr} ${timeStr})`;
 };
 
 /**
@@ -24,7 +109,7 @@ export const getItems = async (req, res) => {
         const { lastId, limit = 6 } = req.query;
         const query = lastId ? { _id: { $lt: lastId } } : {};
 
-        const items = await LostItem.find(query)
+        const items = await LostAndFound.find(query)
             .sort({ _id: -1 })
             .limit(parseInt(limit) + 1)
             .populate('reportedBy', 'name enroll'); // Add this line to get user info
@@ -56,31 +141,24 @@ export const getItems = async (req, res) => {
  */
 export const createItem = async (req, res) => {
     try {
-        const { name, whereFound, whereToFind, whenFound, whenFoundTime, tags } = req.body;
+        const { description } = req.body;
+        const { title, tags } = await generateTitleAndTags({ name: description }); // Pass description as name for processing
 
         const itemData = {
-            name,
-            whereFound,
-            whereToFind,
-            whenFound,
-            whenFoundTime,
-            tags, // Remove JSON.parse since tags is already an array
-            reportedBy: req.user._id
+            ...req.body,
+            description, // Store original description
+            name: title, // Store generated title
+            reportedBy: req.user._id,
+            tags: tags
         };
 
-        // Add image URL if file was uploaded
-        if (req.file) {
-            // Create URL-friendly path for the image
-            const imagePath = `/uploads/${req.file.filename}`;
-            itemData.image = imagePath;
-        }
+        const newItem = await LostAndFound.create(itemData);
+        const populatedItem = await LostAndFound.findById(newItem._id)
+            .populate('reportedBy', 'name');
 
-        const newItem = new LostItem(itemData);
-        await newItem.save();
-
-        res.status(201).json(newItem);
+        res.status(201).json(populatedItem);
     } catch (error) {
-        console.error('Error creating item:', error);
-        res.status(500).json({ message: 'Failed to create item' });
+        console.error('Create item error:', error);
+        res.status(400).json({ message: error.message });
     }
 };

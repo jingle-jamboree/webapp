@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Sidenav from './Sidenav';
 import { useAuth } from '../context/AuthContext';
 import { Bars3Icon } from '@heroicons/react/24/outline';
