@@ -10,6 +10,12 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import lostAndFoundRoutes from './routes/lostAndFoundRoutes.js';
 
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import parcelRoutes from './routes/parcelRoutes.js';
+import { ChatRoom } from './models/ChatRoom.js';
+import User from './models/User.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -37,11 +43,12 @@ app.use(cors({
 
 // Ensure JSON parsing is before routes
 app.use(express.json());
-app.use(bodyParser.json());
 app.use("/", express.static("build"));
 app.use("/api/auth", authRoutes);
 app.use("/api/whoami", userRoutes);
 app.use('/api/lost-and-found', lostAndFoundRoutes);
+app.use('/api/parcel', parcelRoutes);
+
 app.use('*', (req, res) => {
     res.redirect('/');
 });
@@ -49,14 +56,80 @@ app.use('*', (req, res) => {
 const PORT = process.env.BACKEND_PORT || 5000;
 const URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:' + PORT;
 
-// Initialize and start server
+// Create and initialise websocket. This can be refactored to a new file.
+const server = http.createServer(app);
+
+export const io = new SocketIOServer(server, {
+    cors: {
+        origin: ['http://localhost:3000'],
+        methods: ['GET', 'POST'],
+        credentials: true,
+    }
+});
+
+const userSocketMap = new Map();
+
+export function getSocketIdByUser(userId) {
+  return userSocketMap.get(userId.toString()) || null;
+}
+
+io.on('connection', (socket) => {
+  console.log('Socket connected:', socket.id);
+
+  const userId = socket.handshake.query.userId;
+  if (userId) {
+    userSocketMap.set(userId, socket.id);
+  }
+
+  socket.on('JOIN_ROOM', (roomId) => {
+    socket.join(roomId);
+  });
+
+  socket.on('CHAT_MESSAGE', async (data) => {
+    try {
+      const { chatRoomId, text, senderId } = data;
+      const room = await ChatRoom.findById(chatRoomId);
+
+      if (!room) return;
+
+      const senderUser = await User.findOne({ enroll: senderId});
+      room.messages.push({
+        sender: senderUser._id,
+        text,
+      });
+      await room.save();
+
+      io.to(chatRoomId).emit('CHAT_MESSAGE', {
+        sender: senderUser?.enroll,
+        senderName: senderUser?.name || 'Unknown',
+        text,
+        timestamp: new Date(),
+      });
+    } catch (err) {
+      console.error('CHAT_MESSAGE error:', err);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected:', socket.id);
+
+    for (const [uid, sid] of userSocketMap.entries()) {
+      if (sid === socket.id) {
+        userSocketMap.delete(uid);
+        break;
+      }
+    }
+  });
+});
+
 connectDB(process.env.MONGO_URI)
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Server is running on ${URL}`);
-        });
-    })
-    .catch(error => {
-        console.error('Failed to initialize application:', error);
-        process.exit(1);
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server is running on ${URL}`);
     });
+  })
+  .catch(error => {
+    console.error('Failed to initialize application:', error);
+    process.exit(1);
+  });
+
