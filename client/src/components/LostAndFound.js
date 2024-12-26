@@ -9,15 +9,21 @@ const API_BASE_URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:5000
 const cardVariants = {
     hidden: {
         opacity: 0,
-        y: 20
+        y: 20,
+        transition: { duration: 0.2 }
     },
     visible: {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.4,
+            duration: 0.3,
             ease: [0.25, 0.1, 0.25, 1]
         }
+    },
+    exit: {
+        opacity: 0,
+        y: -20,
+        transition: { duration: 0.2 }
     }
 };
 
@@ -464,6 +470,10 @@ const LostAndFound = () => {
                                 onChange={handleSearchChange}
                                 placeholder="Search by item name"
                                 className="input-field mb-0"
+                                autoComplete="off"
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck="false"
                             />
 
                             <motion.div
@@ -483,6 +493,10 @@ const LostAndFound = () => {
                                         onChange={handleSearchChange}
                                         placeholder="Search by location"
                                         className="input-field mb-0"
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
                                     />
                                     <div className="relative">
                                         <CustomDateInput
@@ -491,6 +505,7 @@ const LostAndFound = () => {
                                             onChange={handleSearchChange}
                                             min="2024-01-01"
                                             max="2025-12-31"
+                                            autoComplete="off"
                                         />
                                     </div>
                                     <input
@@ -500,6 +515,10 @@ const LostAndFound = () => {
                                         onChange={handleSearchChange}
                                         placeholder="Search by tags (e.g., wallet, black)"
                                         className="input-field mb-0"
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="off"
+                                        spellCheck="false"
                                     />
                                 </div>
                             </motion.div>
@@ -528,22 +547,33 @@ const LostAndFound = () => {
                                 Loading...
                             </div>
                         </motion.div>
+                    ) : filteredItems.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-8 text-gray-400"
+                        >
+                            No items found
+                        </motion.div>
                     ) : (
-                        <>
+                        <AnimatePresence mode="wait">
                             <motion.div
+                                key={searchQuery.name + searchQuery.location + searchQuery.date + searchQuery.tags}
                                 variants={containerVariants}
                                 initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true }}
+                                animate="visible"
                                 className="space-y-4"
                             >
                                 {filteredItems.map((item) => (
                                     <motion.div
                                         key={item._id}
                                         variants={cardVariants}
-                                        className="bg-gray-700 rounded-lg p-4 transition duration-300
-                                            hover:bg-gray-600/50 hover:shadow-lg hover:scale-[1.02]
-                                            hover:shadow-black/20"
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
+                                        layout
+                                        className="bg-gray-700 rounded-lg p-4 transition-colors duration-300
+                                            hover:bg-gray-600/50"
                                     >
                                         <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
                                             {item.name}
@@ -574,8 +604,7 @@ const LostAndFound = () => {
                                     </motion.div>
                                 ))}
                             </motion.div>
-                            {/* ...existing loading indicators... */}
-                        </>
+                        </AnimatePresence>
                     )}
                 </motion.div>
             </div>
