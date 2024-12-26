@@ -293,13 +293,13 @@ const LostAndFound = () => {
 
     // Custom date/time input wrappers
     const CustomDateInput = ({ value, onChange, name, ...props }) => (
-        <div className="relative">
+        <div className="relative" onClick={() => document.querySelector(`input[name="${name}"]`).showPicker()}>
             <input
                 type="date"
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="input-field mb-0 appearance-none pl-10"
+                className="input-field input-field-required mb-0 appearance-none pl-10"
                 {...props}
             />
             <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -307,13 +307,13 @@ const LostAndFound = () => {
     );
 
     const CustomTimeInput = ({ value, onChange, name, ...props }) => (
-        <div className="relative">
+        <div className="relative" onClick={() => document.querySelector(`input[name="${name}"]`).showPicker()}>
             <input
                 type="time"
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="input-field mb-0 appearance-none pl-10"
+                className="input-field input-field-required mb-0 appearance-none pl-10"
                 {...props}
             />
             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -353,386 +353,394 @@ const LostAndFound = () => {
         };
     }, [isFetchingMore, hasMore, itemCount]);
 
+    // Consolidated animations
+    const pageTransition = {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.2 }
+    };
+
+    // Add page entry animation variants
+    const pageVariants = {
+        initial: {
+            opacity: 0,
+            y: 20
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                ease: [0.25, 0.1, 0.25, 1],
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        initial: {
+            opacity: 0,
+            y: 20
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                ease: [0.25, 0.1, 0.25, 1]
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Initial state after mount
+        setIsCompact(window.scrollY > 20);
+
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            setIsCompact(scrollY > 20);
+            setShowScrollTop(scrollY > 500);
+            setIsButtonCompact(scrollY > 100);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     return (
-        <>
-            {/* Fixed elements */}
-            <div className={headerClasses}>
-                <div ref={headerContentRef} className="container mx-auto px-4">
-                    <h2 ref={headerRef} className={titleClasses}>
-                        Lost and Found
-                    </h2>
-                </div>
-            </div>
-
-            {/* Floating Action Buttons */}
+        <motion.div
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            className="max-w-4xl mx-auto pb-5"
+        >
+            {/* Simplified header with smoother transitions */}
             <motion.div
-                className="fixed bottom-6 right-6 z-50 space-y-4"
-                initial={false}
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className={`fixed top-0 left-0 right-0 z-20 
+                    transition-all duration-300 ease-out
+                    border-b border-white/5 backdrop-blur-sm
+                    ${isCompact ? 'py-4 bg-[#0B0F1A]/60' : 'py-8 bg-transparent'}`}
             >
-                {/* Scroll to Top Button */}
-                <motion.button
-                    onClick={scrollToTop}
-                    className="bg-gray-800 hover:bg-gray-700 h-14 w-14 rounded-full shadow-lg
-                        flex items-center justify-center transition-all duration-200"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{
-                        opacity: showScrollTop ? 1 : 0,
-                        y: showScrollTop ? 0 : 20,
-                        pointerEvents: showScrollTop ? 'auto' : 'none'
-                    }}
-                    transition={{ duration: 0.2 }}
-                >
-                    <ArrowUpIcon className="h-6 w-6 text-gray-300" />
-                </motion.button>
-
-                <motion.button
-                    onClick={() => setIsFormVisible(true)}
-                    className="bg-gradient-to-r from-orange-700 to-amber-700 floating-action-button
-                            text-white font-semibold rounded-full shadow-lg
-                            transition-colors duration-500
-                            flex items-center gap-3 overflow-hidden"
-                    animate={{
-                        width: isButtonCompact ? 56 : 200,
-                    }}
-                    style={{ height: 56 }}
-                >
-                    {/* ...existing FAB content... */}
-                </motion.button>
+                <h2 className={`font-bold text-center gradient-text 
+                    transition-all duration-300 ease-out
+                    ${isCompact ? 'text-2xl' : 'text-3xl'}`}>
+                    Lost and Found
+                </h2>
             </motion.div>
 
-            {/* Scrollable content */}
-            <motion.div
-                className="max-w-4xl mx-auto pb-5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-            >
-                {/* Grid layout to maintain spacing */}
-                <div className="grid grid-rows-[auto_1fr]">
-                    <div className="py-12"></div>
-                    <div className="h-[3.75rem]" />
-                </div>
-
-                {/* Content section */}
-                <div className="px-4 space-y-8">
-                    {error && (
-                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-lg">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Search Section */}
-                    <div className="card">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-semibold text-blue-300">
-                                    Search Items
-                                </h3>
-                                <button
-                                    onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                                    className="text-gray-400 hover:text-white transition-colors"
-                                >
-                                    <motion.div
-                                        initial={false} // Add this line
-                                        animate={{ rotate: isSearchExpanded ? 180 : 0 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
-                                        <ChevronDownIcon className="h-5 w-5" />
-                                    </motion.div>
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={searchQuery.name}
-                                    onChange={handleSearchChange}
-                                    placeholder="Search by item name"
-                                    className="input-field mb-0"
-                                />
-
+            {/* Adjust content spacing */}
+            <div className={`transition-all duration-300 ease-out 
+                ${isCompact ? 'pt-20' : 'pt-28'} px-4 space-y-8`}>
+                {/* Search Card - Add animation */}
+                <motion.div variants={itemVariants} className="card">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xl font-semibold text-blue-300">
+                                Search Items
+                            </h3>
+                            <button
+                                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
                                 <motion.div
                                     initial={false} // Add this line
-                                    animate={{
-                                        height: isSearchExpanded ? 'auto' : 0,
-                                        opacity: isSearchExpanded ? 1 : 0
-                                    }}
+                                    animate={{ rotate: isSearchExpanded ? 180 : 0 }}
                                     transition={{ duration: 0.3 }}
-                                    className="overflow-hidden"
                                 >
-                                    <div className="space-y-4 pt-2">
-                                        <input
-                                            type="text"
-                                            name="location"
-                                            value={searchQuery.location}
+                                    <ChevronDownIcon className="h-5 w-5" />
+                                </motion.div>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                name="name"
+                                value={searchQuery.name}
+                                onChange={handleSearchChange}
+                                placeholder="Search by item name"
+                                className="input-field mb-0"
+                            />
+
+                            <motion.div
+                                initial={false} // Add this line
+                                animate={{
+                                    height: isSearchExpanded ? 'auto' : 0,
+                                    opacity: isSearchExpanded ? 1 : 0
+                                }}
+                                transition={{ duration: 0.3 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="space-y-4 pt-2">
+                                    <input
+                                        type="text"
+                                        name="location"
+                                        value={searchQuery.location}
+                                        onChange={handleSearchChange}
+                                        placeholder="Search by location"
+                                        className="input-field mb-0"
+                                    />
+                                    <div className="relative">
+                                        <CustomDateInput
+                                            name="date"
+                                            value={searchQuery.date}
                                             onChange={handleSearchChange}
-                                            placeholder="Search by location"
-                                            className="input-field mb-0"
-                                        />
-                                        <div className="relative">
-                                            <CustomDateInput
-                                                name="date"
-                                                value={searchQuery.date}
-                                                onChange={handleSearchChange}
-                                                min="2024-01-01"
-                                                max="2025-12-31"
-                                            />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            name="tags"
-                                            value={searchQuery.tags}
-                                            onChange={handleSearchChange}
-                                            placeholder="Search by tags (e.g., wallet, black)"
-                                            className="input-field mb-0"
+                                            min="2024-01-01"
+                                            max="2025-12-31"
                                         />
                                     </div>
-                                </motion.div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Items List */}
-                    <div className="card">
-                        <h3 className="text-xl font-semibold mb-6 text-blue-300">
-                            Recent Found Items
-                        </h3>
-
-                        {isLoading ? (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="text-center py-8 text-gray-400"
-                            >
-                                <div className="inline-flex items-center gap-2">
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                        className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"
+                                    <input
+                                        type="text"
+                                        name="tags"
+                                        value={searchQuery.tags}
+                                        onChange={handleSearchChange}
+                                        placeholder="Search by tags (e.g., wallet, black)"
+                                        className="input-field mb-0"
                                     />
-                                    Loading...
                                 </div>
                             </motion.div>
-                        ) : (
-                            <>
-                                <motion.div
-                                    variants={containerVariants}
-                                    initial="hidden"
-                                    whileInView="visible"
-                                    viewport={{ once: true }}
-                                    className="space-y-4"
-                                >
-                                    {filteredItems.map((item) => (
-                                        <motion.div
-                                            key={item._id}
-                                            variants={cardVariants}
-                                            className="bg-gray-700 rounded-lg p-4 transition duration-300
-                                                hover:bg-gray-600/50 hover:shadow-lg hover:scale-[1.02]
-                                                hover:shadow-black/20"
-                                        >
-                                            <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
-                                                {item.name}
-                                            </h4>
-                                            <div className="space-y-2 text-gray-300">
-                                                <p>Found at: {item.whereFound}</p>
-                                                <p>Collect from: {item.whereToFind}</p>
-                                                <p>Found on: {new Date(item.whenFound).toLocaleDateString()} at {item.whenFoundTime}</p>
-                                                <div className="flex items-center gap-2 text-sm text-gray-400">
-                                                    <span className="truncate">Posted by: {item.reportedBy?.name || 'Unknown'}</span>
-                                                    <span>•</span>
-                                                    <span className="whitespace-nowrap">{formatDate(item.createdAt)}</span>
-                                                </div>
-                                                {item.tags && item.tags.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        {item.tags.map((tag, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="px-3 py-1.5 bg-gray-800/50 rounded-full text-xs text-gray-300
-                                                                        border border-gray-700/50 transition-colors"
-                                                            >
-                                                                {tag}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </motion.div>
-                                {/* ...existing loading indicators... */}
-                            </>
-                        )}
+                        </div>
                     </div>
+                </motion.div>
 
-                    {/* Floating Action Button */}
-                    <motion.div
-                        className="fixed bottom-6 right-6 z-50 space-y-4"
-                        initial={false}
-                    >
-                        {/* Scroll to Top Button */}
+                {/* Items List Card - Add animation */}
+                <motion.div variants={itemVariants} className="card">
+                    <h3 className="text-xl font-semibold mb-6 text-blue-300">
+                        Recent Found Items
+                    </h3>
+
+                    {isLoading ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-8 text-gray-400"
+                        >
+                            <div className="inline-flex items-center gap-2">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"
+                                />
+                                Loading...
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <>
+                            <motion.div
+                                variants={containerVariants}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className="space-y-4"
+                            >
+                                {filteredItems.map((item) => (
+                                    <motion.div
+                                        key={item._id}
+                                        variants={cardVariants}
+                                        className="bg-gray-700 rounded-lg p-4 transition duration-300
+                                            hover:bg-gray-600/50 hover:shadow-lg hover:scale-[1.02]
+                                            hover:shadow-black/20"
+                                    >
+                                        <h4 className="text-lg font-medium mb-2 truncate max-w-full" title={item.name}>
+                                            {item.name}
+                                        </h4>
+                                        <div className="space-y-2 text-gray-300">
+                                            <p>Found at: {item.whereFound}</p>
+                                            <p>Collect from: {item.whereToFind}</p>
+                                            <p>Found on: {new Date(item.whenFound).toLocaleDateString()} at {item.whenFoundTime}</p>
+                                            <div className="flex items-center gap-2 text-sm text-gray-400">
+                                                <span className="truncate">Posted by: {item.reportedBy?.name || 'Unknown'}</span>
+                                                <span>•</span>
+                                                <span className="whitespace-nowrap">{formatDate(item.createdAt)}</span>
+                                            </div>
+                                            {item.tags && item.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {item.tags.map((tag, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="px-3 py-1.5 bg-gray-800/50 rounded-full text-xs text-gray-300
+                                                                    border border-gray-700/50 transition-colors"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                            {/* ...existing loading indicators... */}
+                        </>
+                    )}
+                </motion.div>
+            </div>
+
+            {/* Single FAB container for both buttons */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="fixed bottom-6 right-6 z-50 space-y-4"
+            >
+                <AnimatePresence>
+                    {showScrollTop && (
                         <motion.button
                             onClick={scrollToTop}
-                            className="bg-gray-800 hover:bg-gray-700 h-14 w-14 rounded-full shadow-lg
-                                flex items-center justify-center transition-all duration-200"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                                opacity: showScrollTop ? 1 : 0,
-                                y: showScrollTop ? 0 : 20,
-                                pointerEvents: showScrollTop ? 'auto' : 'none'
-                            }}
-                            transition={{ duration: 0.2 }}
+                            className="bg-gray-800 h-14 w-14 rounded-full shadow-lg
+                                flex items-center justify-center"
+                            {...pageTransition}
                         >
                             <ArrowUpIcon className="h-6 w-6 text-gray-300" />
                         </motion.button>
+                    )}
+                </AnimatePresence>
 
-                        {/* Existing FAB */}
-                        <motion.button
-                            onClick={() => setIsFormVisible(true)}
-                            className="bg-gradient-to-r from-orange-700 to-amber-700 floating-action-button
-                                    text-white font-semibold rounded-full shadow-lg
-                                    transition-colors duration-500
-                                    flex items-center gap-3 overflow-hidden"
-                            animate={{
-                                width: isButtonCompact ? 56 : 200,
-                                transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                            }}
-                            style={{ height: 56 }}
-                        >
-                            <div className="flex items-center h-full pl-4">
-                                <PlusIcon className="h-6 w-6 flex-shrink-0" />
-                            </div>
-                            <motion.div
-                                className="flex-1 pr-5 whitespace-nowrap"
-                                animate={{
-                                    x: isButtonCompact ? -50 : 0,
-                                    opacity: isButtonCompact ? 0 : 1,
-                                }}
-                                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                            >
-                                Report Found Item
-                            </motion.div>
-                        </motion.button>
+                {/* Add Item FAB */}
+                <motion.button
+                    onClick={() => setIsFormVisible(true)}
+                    className="bg-gradient-to-r from-orange-700 to-amber-700
+                        text-white rounded-full shadow-lg h-14
+                        flex items-center gap-3 overflow-hidden"
+                    animate={{ width: isButtonCompact ? 56 : 200 }}
+                >
+                    <div className="flex items-center h-full pl-4">
+                        <PlusIcon className="h-6 w-6 flex-shrink-0" />
+                    </div>
+                    <motion.div
+                        className="flex-1 pr-5 whitespace-nowrap"
+                        animate={{
+                            x: isButtonCompact ? -50 : 0,
+                            opacity: isButtonCompact ? 0 : 1,
+                        }}
+                        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                        Report Found Item
                     </motion.div>
-
-                    {/* Modal with Animated Overlay */}
-                    <AnimatePresence>
-                        {isFormVisible && (
-                            <>
-                                <motion.div
-                                    initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                                    animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
-                                    exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                                    transition={{ duration: 0.2 }}
-                                    className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[100]"
-                                    onClick={handleCloseModal}
-                                    style={{ margin: 0 }}
-                                />
-                                <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="w-full max-w-md pointer-events-auto"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className={`bg-gray-800 rounded-2xl w-full p-6 shadow-xl
-                                            border border-white/10 transition-all duration-200
-                                            ${isClosing ? 'animate-slide-up' : 'animate-slide-down'}`}
-                                        >
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="text-xl font-semibold text-blue-300">
-                                                    Report Found Item
-                                                </h3>
-                                                <button
-                                                    onClick={handleCloseModal}
-                                                    className="text-gray-400 hover:text-white transition-colors text-xl"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-
-                                            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-                                                {/* When section */}
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-300">When was it found?</label>
-                                                    <div className="grid grid-cols-[1.3fr_1fr] gap-4">
-                                                        <CustomDateInput
-                                                            name="whenFound"
-                                                            value={formData.whenFound}
-                                                            onChange={handleInputChange}
-                                                            min="2024-01-01"
-                                                            max="2025-12-31"
-                                                            required
-                                                        />
-                                                        <CustomTimeInput
-                                                            name="whenFoundTime"
-                                                            value={formData.whenFoundTime}
-                                                            onChange={handleInputChange}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Item details section */}
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-300">Item Details</label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        autoComplete="off"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        placeholder="What was found? (e.g., Black Wallet)"
-                                                        className="input-field"
-                                                        required
-                                                    />
-                                                    <TagInput
-                                                        tags={formData.tags}
-                                                        setTags={(newTags) => setFormData(prev => ({ ...prev, tags: newTags }))}
-                                                        placeholder="Add descriptive tags (e.g. leather, cards)"
-                                                    />
-                                                </div>
-
-                                                {/* Location section */}
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-300">Location Information</label>
-                                                    <input
-                                                        type="text"
-                                                        name="whereFound"
-                                                        autoComplete="off"
-                                                        value={formData.whereFound}
-                                                        onChange={handleInputChange}
-                                                        placeholder="Where was it found? (e.g., Near Library)"
-                                                        className="input-field"
-                                                        required
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        name="whereToFind"
-                                                        autoComplete="off"
-                                                        value={formData.whereToFind}
-                                                        onChange={handleInputChange}
-                                                        placeholder="Where to collect? (e.g., Library Reception)"
-                                                        className="input-field"
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <button type="submit" className="btn-primary w-full mt-6">
-                                                    Post Found Item
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </motion.div>
-                                </div>
-                            </>
-                        )}
-                    </AnimatePresence>
-                </div>
+                </motion.button>
             </motion.div>
 
-        </>
+            {/* Modal */}
+            <AnimatePresence>
+                {isFormVisible && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+                            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[100]"
+                            onClick={handleCloseModal}
+                            style={{ margin: 0 }}
+                        />
+                        <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{ duration: 0.2 }}
+                                className="w-full max-w-md pointer-events-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className={`bg-gray-800 rounded-2xl w-full p-6 shadow-xl
+                                    border border-white/10 transition-all duration-200
+                                    ${isClosing ? 'animate-slide-up' : 'animate-slide-down'}`}
+                                >
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-semibold text-blue-300">
+                                            Report Found Item
+                                        </h3>
+                                        <button
+                                            onClick={handleCloseModal}
+                                            className="text-gray-400 hover:text-white transition-colors text-xl"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+                                        {/* When section */}
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-300">When was it found?</label>
+                                            <div className="grid grid-cols-[1.3fr_1fr] gap-4">
+                                                <CustomDateInput
+                                                    name="whenFound"
+                                                    value={formData.whenFound}
+                                                    onChange={handleInputChange}
+                                                    min="2024-01-01"
+                                                    max="2025-12-31"
+                                                    required
+                                                />
+                                                <CustomTimeInput
+                                                    name="whenFoundTime"
+                                                    value={formData.whenFoundTime}
+                                                    onChange={handleInputChange}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Item details section */}
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-300">Item Details</label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                autoComplete="off"
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                placeholder="What was found? (Required)"
+                                                className="input-field input-field-required"
+                                                required
+                                            />
+                                            <TagInput
+                                                tags={formData.tags}
+                                                setTags={(newTags) => setFormData(prev => ({ ...prev, tags: newTags }))}
+                                                placeholder="Add descriptive tags (Optional)"
+                                                className="input-field-optional"
+                                            />
+                                        </div>
+
+                                        {/* Location section */}
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-300">Location Information</label>
+                                            <input
+                                                type="text"
+                                                name="whereFound"
+                                                autoComplete="off"
+                                                value={formData.whereFound}
+                                                onChange={handleInputChange}
+                                                placeholder="Where was it found? (Required)"
+                                                className="input-field input-field-required"
+                                                required
+                                            />
+                                            <input
+                                                type="text"
+                                                name="whereToFind"
+                                                autoComplete="off"
+                                                value={formData.whereToFind}
+                                                onChange={handleInputChange}
+                                                placeholder="Where to collect? (Required)"
+                                                className="input-field input-field-required"
+                                                required
+                                            />
+                                        </div>
+
+                                        <button type="submit" className="btn-primary w-full mt-6">
+                                            Post Found Item
+                                        </button>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 
