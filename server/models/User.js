@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   hostelname: { type: String },
   floor: { type: String },
   roomno: { type: String },
+  credits: { type: Number, default: 0 },
 });
 
 const User = mongoose.model('User', userSchema);
