@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const lostAndFoundSchema = new mongoose.Schema({
-    title: {
+    name: {
         type: String,
         required: true,
     },
@@ -9,20 +9,37 @@ const lostAndFoundSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    contactInfo: {
-        type: String,
-        required: true,
-    },
-    dateFound: {
+    whenFound: {
         type: Date,
-        default: Date.now,
+        required: true,
+        transform: (v) => new Date(v)
     },
-    location: {
+    whenFoundTime: {
         type: String,
         required: true,
     },
+    whereFound: {
+        type: String,
+        required: true,
+    },
+    whereToFind: {
+        type: String,
+        required: true,
+    },
+    tags: [{
+        type: String
+    }],
+    reportedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+}, {
+    collection: 'lostandfounds'
 });
 
-const LostAndFound = mongoose.model('LostAndFound', lostAndFoundSchema);
-
-module.exports = LostAndFound;
+export default mongoose.model('LostAndFound', lostAndFoundSchema);

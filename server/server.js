@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -19,14 +19,44 @@ import User from './models/User.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables from .env.development file
-dotenv.config({
-    path: path.resolve(__dirname, '../.env.development')
-});
+// First try loading development env if exists
+let envPath = path.resolve(__dirname, '../.env.development');
 
-// Validate essential environment variables
-if (!process.env.MONGO_URI) {
-    console.error('FATAL ERROR: MONGO_URI is not defined in environment variables');
+try {
+    // If development env doesn't exist or we're explicitly in production, try production env
+    if (!fs.existsSync(envPath) || process.env.NODE_ENV === 'production') {
+        envPath = path.resolve(__dirname, '../.env.production');
+    }
+
+    // Load the appropriate env file
+    const envResult = dotenv.config({ path: envPath });
+
+    if (envResult.error) {
+        throw new Error(`Failed to load environment file: ${envResult.error.message}`);
+    }
+
+    // Set NODE_ENV if not already set
+    if (!process.env.NODE_ENV) {
+        process.env.NODE_ENV = envPath.includes('production') ? 'production' : 'development';
+    }
+
+    // Validate essential environment variables
+    const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'GROQ_API_KEY'];
+    const missingEnvVars = requiredEnvVars.filter(key => !process.env[key]);
+
+    if (missingEnvVars.length > 0) {
+        throw new Error('Missing required environment variables: ' + missingEnvVars.join(', '));
+    }
+
+    // Add debug logging
+    console.log('Environment setup complete. Available variables:', {
+        NODE_ENV: process.env.NODE_ENV,
+        GROQ_API_KEY: process.env.GROQ_API_KEY ? '✓ Present' : '✗ Missing',
+        // Add other variables you want to check
+    });
+
+} catch (error) {
+    console.error('Environment setup failed:', error.message);
     process.exit(1);
 }
 
