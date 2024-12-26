@@ -3,96 +3,87 @@
 @tailwind utilities;
 
 @layer base {
-    html,
     body {
-        @apply overflow-x-hidden;
+        @apply bg-[#0B0F1A] text-white relative min-h-screen overflow-x-hidden;
     }
 
-    body {
-        @apply bg-[#0B0F1A] text-white relative min-h-screen;
-    }
-
+    /* Simplified noise overlay */
     body::before {
         content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        @apply fixed inset-0 opacity-5 pointer-events-none z-[1];
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        opacity: 0.05;
-        pointer-events: none;
-        z-index: 1;
     }
 }
 
 @layer components {
+    /* Common Input Styles */
     .input-field {
-        @apply bg-gray-800 border border-gray-600 rounded-lg p-3 w-full
-    focus:outline-none transition duration-300;
+        @apply w-full px-4 py-3 bg-gray-800/80 border border-gray-700/80 
+        rounded-lg outline-none transition-all duration-300
+        text-[15px] placeholder:text-gray-500
+        focus:border-blue-500 focus:bg-gray-800;
     }
 
+    /* Button Styles */
     .btn-primary {
-        @apply bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg
-    transition duration-300;
+        @apply w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 
+        text-white font-medium rounded-lg transition-all duration-300 text-[15px]
+        disabled:opacity-50 disabled:cursor-not-allowed
+        active:from-blue-600 active:to-blue-700;
     }
 
+    /* Card Styles */
     .card {
-        @apply bg-gray-800 rounded-lg p-6 transition duration-300
-    border border-gray-700;
+        @apply bg-gray-800/90 rounded-lg p-6 border border-white/10;
     }
 
-    .glass-card {
-        @apply backdrop-blur-md bg-opacity-10 bg-white/5 border border-white/10
-    rounded-xl transition-all duration-300;
-    }
-
-    .feature-button {
-        @apply backdrop-blur-md bg-opacity-10 bg-white/5 border border-white/10
-    rounded-xl transition-all duration-300
-    p-6 relative overflow-hidden
-    flex flex-col items-center justify-center gap-4;
-    }
-
+    /* Text Styles */
     .gradient-text {
         @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
     }
 
-    .page-gradient {
-        @apply bg-gradient-to-b from-[#0B0F1A] via-[#131B2E] to-[#0B0F1A] min-h-screen;
+    /* Date/Time Input Styles */
+    input[type="date"],
+    input[type="time"] {
+        &::-webkit-calendar-picker-indicator {
+            @apply opacity-0 w-full h-full absolute inset-0 cursor-pointer;
+        }
+
+        &::-webkit-datetime-edit {
+            @apply h-full flex items-center;
+        }
+
+        &::-webkit-datetime-edit-fields-wrapper {
+            @apply pl-2;
+        }
+
+        &::-webkit-datetime-edit-text,
+        &::-webkit-datetime-edit-month-field,
+        &::-webkit-datetime-edit-day-field,
+        &::-webkit-datetime-edit-year-field,
+        &::-webkit-datetime-edit-hour-field,
+        &::-webkit-datetime-edit-minute-field,
+        &::-webkit-datetime-edit-ampm-field {
+            @apply text-gray-300;
+        }
+
+        &:not(:valid)::-webkit-datetime-edit {
+            @apply text-gray-500;
+        }
     }
 
-    .page-container {
-        @apply relative z-10;
+    /* Basic Animation Classes */
+    .animate-slide-down {
+        animation: slideDown 0.2s ease-out;
     }
 
-    .noise-background {
-        @apply fixed inset-0 w-full h-full pointer-events-none opacity-5;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
-    .gradient-background {
-        @apply fixed inset-0 w-full h-full pointer-events-none;
-        background: linear-gradient(to bottom, #0b0f1a, #131b2e, #0b0f1a);
-    }
-
-    .page-wrapper {
-        @apply relative min-h-screen w-full overflow-x-hidden;
-    }
-
-    .content-container {
-        @apply relative z-10 w-full min-h-screen;
-        position: relative;
-        min-height: 100vh;
-    }
-
-    .header-shadow {
-        @apply shadow-lg shadow-black/5 border-b border-white/5;
+    .animate-slide-up {
+        animation: slide-up 0.2s ease-out forwards;
     }
 
     @keyframes slideDown {
         from {
-            transform: translateY(-100%);
+            transform: translateY(-20px);
             opacity: 0;
         }
         to {
@@ -101,37 +92,42 @@
         }
     }
 
-    .animate-slide-down {
-        animation: slideDown 0.5s ease-out forwards;
+    @keyframes slide-up {
+        from {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateY(20px);
+            opacity: 0;
+        }
     }
 
+    /* Feature Box Styles */
     .feature-card {
         @apply relative overflow-hidden rounded-xl backdrop-blur-sm
         bg-gradient-to-b from-white/5 to-white/[0.02]
         border border-white/[0.08]
-        transition-all duration-500 ease-out;
+        transition-all duration-500 ease-out
+        active:scale-95;
     }
 
     .feature-inner {
         @apply relative z-10 h-full w-full p-6
-        flex flex-col items-center justify-center gap-4
-        transition-all duration-500;
-    }
-
-    .feature-glow {
-        @apply absolute inset-0 opacity-0 
-        bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10
-        transition-opacity duration-500
-        blur-xl;
+        flex flex-col items-center justify-center gap-4;
     }
 
     .feature-icon {
-        @apply text-4xl mb-2 transition-all duration-500;
+        @apply text-4xl mb-2;
     }
 
     .feature-name {
-        @apply text-lg font-medium text-gray-300
-        transition-colors duration-500;
+        @apply text-lg font-medium text-gray-300 text-center;
+    }
+
+    /* Feature Card Grid */
+    .card-grid {
+        @apply grid grid-cols-2 gap-4;
     }
 
     @keyframes float {
@@ -148,209 +144,18 @@
         animation: float 2s ease-in-out infinite;
     }
 
-    .card-grid {
-        @apply grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4
-        [&>*:nth-child(1)]:hover:rotate-[-1deg]
-        [&>*:nth-child(2)]:hover:rotate-[1deg]
-        [&>*:nth-child(3)]:hover:rotate-[-1deg]
-        [&>*:nth-child(4)]:hover:rotate-[1deg];
-    }
-
-    .nav-item {
-        @apply flex items-center gap-3 px-4 py-3 rounded-lg
-        transition-colors duration-200
-        text-gray-300;
-    }
-
-    .nav-item-active {
-        @apply bg-blue-500/20 text-blue-400;
-    }
-
-    @keyframes slide-down {
-        from {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .animate-slide-down {
-        animation: slide-down 0.2s ease-out;
-    }
-
-    @keyframes slide-up {
-        from {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-    }
-
-    .animate-slide-up {
-        animation: slide-up 0.2s ease-out forwards;
-    }
-
-    /* Custom styles for date input */
-    input[type="date"] {
-        /* White calendar icon */
-        &::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            opacity: 0.5;
-            cursor: pointer;
+    /* Add touch feedback for mobile */
+    @media (hover: none) {
+        .feature-card:active {
+            @apply bg-white/10 border-white/20;
         }
 
-        /* Dark theme for the dropdown */
-        &::-webkit-datetime-edit {
-            color: #fff;
+        .feature-card:active .feature-icon {
+            @apply animate-float;
         }
 
-        &::-webkit-datetime-edit-fields-wrapper {
-            padding: 0;
-        }
-
-        &::-webkit-datetime-edit-text {
-            color: rgb(156 163 175);
-            padding: 0 0.3em;
-        }
-
-        &::-webkit-datetime-edit-month-field,
-        &::-webkit-datetime-edit-day-field,
-        &::-webkit-datetime-edit-year-field {
-            color: rgb(209 213 219);
-            padding: 0;
-        }
-
-        &::-webkit-inner-spin-button {
-            display: none;
-        }
-
-        &::-webkit-clear-button {
-            display: none;
-        }
-
-        &:focus::-webkit-calendar-picker-indicator {
-            opacity: 0.7;
-        }
-    }
-
-    /* Style for placeholder text in date inputs */
-    input[type="date"]::-webkit-datetime-edit-text,
-    input[type="date"]::-webkit-datetime-edit-month-field,
-    input[type="date"]::-webkit-datetime-edit-day-field,
-    input[type="date"]::-webkit-datetime-edit-year-field {
-        color: rgb(156 163 175);
-    }
-
-    input[type="date"]:focus::-webkit-datetime-edit-text,
-    input[type="date"]:focus::-webkit-datetime-edit-month-field,
-    input[type="date"]:focus::-webkit-datetime-edit-day-field,
-    input[type="date"]:focus::-webkit-datetime-edit-year-field,
-    input[type="date"]:valid::-webkit-datetime-edit-text,
-    input[type="date"]:valid::-webkit-datetime-edit-month-field,
-    input[type="date"]:valid::-webkit-datetime-edit-day-field,
-    input[type="date"]:valid::-webkit-datetime-edit-year-field {
-        color: rgb(209 213 219);
-    }
-
-    /* Date and Time Input Styles */
-    input[type="date"],
-    input[type="time"] {
-        &::-webkit-calendar-picker-indicator {
-            opacity: 0; /* Hide default icons */
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            cursor: pointer;
-        }
-
-        &::-webkit-datetime-edit {
-            height: 100%;
-            display: flex;
-            align-items: center;
-        }
-
-        &::-webkit-datetime-edit-fields-wrapper {
-            padding-left: 0.5rem;
-        }
-
-        &::-webkit-datetime-edit-text,
-        &::-webkit-datetime-edit-month-field,
-        &::-webkit-datetime-edit-day-field,
-        &::-webkit-datetime-edit-year-field,
-        &::-webkit-datetime-edit-hour-field,
-        &::-webkit-datetime-edit-minute-field,
-        &::-webkit-datetime-edit-ampm-field {
-            color: rgb(209 213 219);
-        }
-
-        /* Style for empty state */
-        &:not(:valid)::-webkit-datetime-edit {
-            color: rgb(156 163 175);
-        }
-    }
-
-    .appearance-none {
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-    }
-
-    .page-content {
-        @apply w-full;
-    }
-
-    /* Update hover classes to only apply on devices that support hover */
-    @media (hover: hover) {
-        .btn-primary {
-            @apply hover:bg-blue-700 hover:-translate-y-0.5;
-        }
-
-        .card {
-            @apply hover:shadow-lg hover:border-blue-500;
-        }
-
-        .glass-card {
-            @apply hover:border-white/20;
-        }
-
-        .feature-button {
-            @apply hover:border-white/20 hover:scale-[1.02] hover:bg-opacity-20
-                hover:shadow-[0_0_30px_rgba(66,153,225,0.15)];
-        }
-
-        .feature-card {
-            @apply hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(66,153,225,0.15)]
-                hover:scale-[1.02] hover:-translate-y-1;
-        }
-
-        .feature-name {
-            @apply group-hover:text-blue-300;
-        }
-
-        .feature-icon {
-            @apply group-hover:scale-125 group-hover:animate-float;
-        }
-
-        .nav-item {
-            @apply hover:bg-white/5 hover:text-white;
-        }
-
-        /* Update input focus styles */
-        .input-field {
-            @apply focus:border-blue-500;
-        }
-
-        /* Update floating action button hover styles */
-        .floating-action-button {
-            @apply hover:from-orange-800 hover:to-amber-800 hover:shadow-orange-500/25 hover:scale-105;
+        .feature-card:active .feature-name {
+            @apply text-blue-300;
         }
     }
 }
