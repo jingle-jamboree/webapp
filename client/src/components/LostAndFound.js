@@ -361,19 +361,82 @@ const LostAndFound = () => {
         transition: { duration: 0.2 }
     };
 
+    // Add page entry animation variants
+    const pageVariants = {
+        initial: {
+            opacity: 0,
+            y: 20
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                ease: [0.25, 0.1, 0.25, 1],
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        initial: {
+            opacity: 0,
+            y: 20
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                ease: [0.25, 0.1, 0.25, 1]
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Initial state after mount
+        setIsCompact(window.scrollY > 20);
+
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            setIsCompact(scrollY > 20);
+            setShowScrollTop(scrollY > 500);
+            setIsButtonCompact(scrollY > 100);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     return (
-        <motion.div {...pageTransition} className="max-w-4xl mx-auto pb-5">
-            {/* Fixed Header */}
-            <div className="fixed top-0 left-0 right-0 z-20 transition-all duration-300
-                border-b border-white/5 backdrop-blur-sm py-5 bg-[#0B0F1A]/60">
-                <h2 className="text-2xl font-bold text-center gradient-text">
+        <motion.div
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            className="max-w-4xl mx-auto pb-5"
+        >
+            {/* Simplified header with smoother transitions */}
+            <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className={`fixed top-0 left-0 right-0 z-20 
+                    transition-all duration-300 ease-out
+                    border-b border-white/5 backdrop-blur-sm
+                    ${isCompact ? 'py-4 bg-[#0B0F1A]/60' : 'py-8 bg-transparent'}`}
+            >
+                <h2 className={`font-bold text-center gradient-text 
+                    transition-all duration-300 ease-out
+                    ${isCompact ? 'text-2xl' : 'text-3xl'}`}>
                     Lost and Found
                 </h2>
-            </div>
+            </motion.div>
 
-            <div className="pt-24 px-4 space-y-8">
-                {/* Search and Items sections */}
-                <div className="card">
+            {/* Adjust content spacing */}
+            <div className={`transition-all duration-300 ease-out 
+                ${isCompact ? 'pt-20' : 'pt-28'} px-4 space-y-8`}>
+                {/* Search Card - Add animation */}
+                <motion.div variants={itemVariants} className="card">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-blue-300">
@@ -442,10 +505,10 @@ const LostAndFound = () => {
                             </motion.div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Items List */}
-                <div className="card">
+                {/* Items List Card - Add animation */}
+                <motion.div variants={itemVariants} className="card">
                     <h3 className="text-xl font-semibold mb-6 text-blue-300">
                         Recent Found Items
                     </h3>
@@ -514,11 +577,16 @@ const LostAndFound = () => {
                             {/* ...existing loading indicators... */}
                         </>
                     )}
-                </div>
+                </motion.div>
             </div>
 
             {/* Single FAB container for both buttons */}
-            <div className="fixed bottom-6 right-6 z-50 space-y-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="fixed bottom-6 right-6 z-50 space-y-4"
+            >
                 <AnimatePresence>
                     {showScrollTop && (
                         <motion.button
@@ -554,7 +622,7 @@ const LostAndFound = () => {
                         Report Found Item
                     </motion.div>
                 </motion.button>
-            </div>
+            </motion.div>
 
             {/* Modal */}
             <AnimatePresence>
