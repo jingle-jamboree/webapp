@@ -16,7 +16,7 @@
 }
 
 @layer components {
-    /* Common Input Styles */
+    /* Core Styles */
     .input-field {
         @apply w-full px-4 py-3 bg-gray-800/80 border border-gray-700/80 
         rounded-lg outline-none transition-all duration-300
@@ -24,39 +24,30 @@
         focus:border-blue-500 focus:bg-gray-800;
     }
 
-    /* Button Styles */
-    .btn-primary {
-        @apply w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 
-        text-white font-medium rounded-lg transition-all duration-300 text-[15px]
-        disabled:opacity-50 disabled:cursor-not-allowed
-        active:from-blue-600 active:to-blue-700;
+    .input-field-required {
+        @apply placeholder:text-gray-400;
     }
 
-    /* Card Styles */
-    .card {
-        @apply bg-gray-800/90 rounded-lg p-6 border border-white/10;
+    .input-field-optional {
+        @apply placeholder:text-gray-600;
     }
 
-    /* Text Styles */
-    .gradient-text {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
-    }
-
-    /* Date/Time Input Styles */
+    /* Date/Time Input Styles - Remove default icons and improve visibility */
     input[type="date"],
     input[type="time"] {
         &::-webkit-calendar-picker-indicator {
-            @apply opacity-0 w-full h-full absolute inset-0 cursor-pointer;
+            @apply hidden;
         }
 
         &::-webkit-datetime-edit {
-            @apply h-full flex items-center;
+            @apply h-full flex items-center text-gray-300;
         }
 
         &::-webkit-datetime-edit-fields-wrapper {
             @apply pl-2;
         }
 
+        /* Make the text more visible when filled */
         &::-webkit-datetime-edit-text,
         &::-webkit-datetime-edit-month-field,
         &::-webkit-datetime-edit-day-field,
@@ -67,20 +58,54 @@
             @apply text-gray-300;
         }
 
+        /* Style for placeholder state */
         &:not(:valid)::-webkit-datetime-edit {
-            @apply text-gray-500;
+            @apply text-gray-400;
         }
     }
 
-    /* Basic Animation Classes */
-    .animate-slide-down {
-        animation: slideDown 0.2s ease-out;
+    .btn-primary {
+        @apply w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 
+        text-white font-medium rounded-lg transition-all duration-300 text-[15px]
+        disabled:opacity-50 disabled:cursor-not-allowed
+        active:from-blue-600 active:to-blue-700;
     }
 
-    .animate-slide-up {
-        animation: slide-up 0.2s ease-out forwards;
+    .card {
+        @apply bg-gray-800/90 rounded-lg p-6 border border-white/10;
     }
 
+    .gradient-text {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
+    }
+
+    /* Features Grid */
+    .feature-card {
+        @apply relative overflow-hidden rounded-xl backdrop-blur-sm
+        bg-gradient-to-b from-white/5 to-white/[0.02]
+        border border-white/[0.08]
+        transition-all duration-300 ease-out
+        active:scale-95 active:bg-white/10 active:border-white/20;
+    }
+
+    .feature-inner {
+        @apply relative z-10 h-full w-full p-6
+        flex flex-col items-center justify-center gap-4;
+    }
+
+    .feature-icon {
+        @apply text-4xl mb-2 transition-transform;
+    }
+
+    .feature-name {
+        @apply text-lg font-medium text-gray-300 text-center;
+    }
+
+    .card-grid {
+        @apply grid grid-cols-2 gap-4;
+    }
+
+    /* Animations */
     @keyframes slideDown {
         from {
             transform: translateY(-20px);
@@ -103,59 +128,10 @@
         }
     }
 
-    /* Feature Box Styles */
-    .feature-card {
-        @apply relative overflow-hidden rounded-xl backdrop-blur-sm
-        bg-gradient-to-b from-white/5 to-white/[0.02]
-        border border-white/[0.08]
-        transition-all duration-500 ease-out
-        active:scale-95;
+    .animate-slide-down {
+        animation: slideDown 0.2s ease-out;
     }
-
-    .feature-inner {
-        @apply relative z-10 h-full w-full p-6
-        flex flex-col items-center justify-center gap-4;
-    }
-
-    .feature-icon {
-        @apply text-4xl mb-2;
-    }
-
-    .feature-name {
-        @apply text-lg font-medium text-gray-300 text-center;
-    }
-
-    /* Feature Card Grid */
-    .card-grid {
-        @apply grid grid-cols-2 gap-4;
-    }
-
-    @keyframes float {
-        0%,
-        100% {
-            transform: translateY(0);
-        }
-        50% {
-            transform: translateY(-5px);
-        }
-    }
-
-    .animate-float {
-        animation: float 2s ease-in-out infinite;
-    }
-
-    /* Add touch feedback for mobile */
-    @media (hover: none) {
-        .feature-card:active {
-            @apply bg-white/10 border-white/20;
-        }
-
-        .feature-card:active .feature-icon {
-            @apply animate-float;
-        }
-
-        .feature-card:active .feature-name {
-            @apply text-blue-300;
-        }
+    .animate-slide-up {
+        animation: slide-up 0.2s ease-out forwards;
     }
 }
