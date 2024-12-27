@@ -21,8 +21,8 @@
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "mongoose": "^5.10.9",
+    "natural": "^8.0.1",
     "socket.io": "^4.8.1"
-    "natural": "^8.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"

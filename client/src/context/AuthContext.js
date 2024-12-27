@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
     const [user, setUser] = useState(
         skipAuth
-            ? { name: 'Dev User', enrollmentNo: '21124001' }
+            ? { name: 'Dev User', enrollmentNo: '21124001', phone: '1234567890' }
             : null
     );
 
