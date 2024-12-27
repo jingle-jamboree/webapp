@@ -55,24 +55,43 @@ const generateTitleAndTags = async (item) => {
             messages: [
                 {
                     role: "system",
-                    content: `The following description has been offered by a person for an item.
-                    Generate a short title for this item and a set of tags. the tags should be more than one and should be describing the object. Use appropriate capitalisation.
-                    The output should be in a json format with the following structure: {title:"<title>", tags:["tag1", "tag2", ...]}.
-                    Example titles: "Black wallet", "iPhone 12 Pro Max", "Boat Airdopes 155".
-                    Example tags: ["wallet", "purse", "black", "leather"], ["phone", "gold", "cracked"], ["TWS", "earbuds"].`,
+                    content: `You are a precise item categorization assistant. Your task is to:
+1. Generate a clear, concise title (3-6 words) that accurately describes the item
+2. Extract relevant tags (3-5 tags) that will help in searching for this item
+
+Rules for title:
+- Must be descriptive but concise
+- Start with key identifying features (color, brand, type)
+- No quotes or special characters
+- Always capitalize first letter of each word
+
+Rules for tags:
+- Include item type, color, brand if mentioned
+- Only use words present in or directly implied by the description
+- No made-up or speculative tags
+- Keep tags simple and searchable
+- Always capitalize first letter of each tag
+
+Format output as valid JSON: {"title": "string", "tags": ["string"]}
+
+Examples:
+Input: "Found a black Samsung phone with cracked screen near library"
+Output: {"title": "Black Samsung Phone Cracked", "tags": ["Phone", "Samsung", "Black", "Damaged"]}
+
+Input: "Nike sports shoes blue color size 9 found in gym"
+Output: {"title": "Blue Nike Sports Shoes", "tags": ["Shoes", "Nike", "Blue", "Sports"]}`
                 },
                 {
                     role: "user",
-                    content: `${item.name}`, //item.name is the description given by the user.
+                    content: item.name
                 }
             ],
             model: "llama-3.1-8b-instant",
             max_tokens: 1024,
             top_p: 1,
+            temperature: 0.7, // Add temperature for slightly more controlled output
             stream: false,
-            response_format: {
-                type: "json_object"
-            },
+            response_format: { type: "json_object" },
             stop: null
         });
         const response = JSON.parse(completion.choices[0]?.message?.content);
@@ -92,12 +111,7 @@ const generateTitleAndTags = async (item) => {
 
 // Helper function for fallback title generation
 const fallbackTitleGeneration = (item) => {
-    const timeStr = item.whenFoundTime.split(':')[0] > 11 ? 'PM' : 'AM';
-    const dateStr = new Date(item.whenFound).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-    });
-    return `${item.name} - Found at ${item.whereFound} (${dateStr} ${timeStr})`;
+    return item.name.split(" ").slice(0, 4).join(" ");
 };
 
 /**
@@ -112,7 +126,7 @@ export const getItems = async (req, res) => {
         const items = await LostAndFound.find(query)
             .sort({ _id: -1 })
             .limit(parseInt(limit) + 1)
-            .populate('reportedBy', 'name enroll'); // Add this line to get user info
+            .populate('reportedBy', 'name enroll phone'); // Change 'mobile' to 'phone'
 
         const hasMore = items.length > limit;
         const resultItems = items.slice(0, limit);
@@ -122,7 +136,8 @@ export const getItems = async (req, res) => {
                 ...item.toObject(),
                 reportedBy: item.reportedBy ? {
                     name: item.reportedBy.name,
-                    enroll: item.reportedBy.enroll
+                    enroll: item.reportedBy.enroll,
+                    phone: item.reportedBy.phone  // Change 'mobile' to 'phone'
                 } : null
             })),
             lastId: resultItems.length > 0 ? resultItems[resultItems.length - 1]._id : null,
@@ -141,20 +156,20 @@ export const getItems = async (req, res) => {
  */
 export const createItem = async (req, res) => {
     try {
-        const { description } = req.body;
-        const { title, tags } = await generateTitleAndTags({ name: description }); // Pass description as name for processing
+        const { description, includePhone } = req.body;  // Add includePhone to destructuring
+        const { title, tags } = await generateTitleAndTags({ name: description });
 
         const itemData = {
             ...req.body,
-            description, // Store original description
-            name: title, // Store generated title
+            description,
+            name: title,
             reportedBy: req.user._id,
             tags: tags
         };
 
         const newItem = await LostAndFound.create(itemData);
         const populatedItem = await LostAndFound.findById(newItem._id)
-            .populate('reportedBy', 'name');
+            .populate('reportedBy', includePhone ? 'name enroll phone' : 'name enroll'); // Conditionally include phone
 
         res.status(201).json(populatedItem);
     } catch (error) {

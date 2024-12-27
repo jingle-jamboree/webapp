@@ -133,7 +133,7 @@ const ItemCard = memo(({ item, onClick }) => {
 });
 
 const LostAndFound = () => {
-    const { handleAuthError, isAuthError } = useAuth();
+    const { handleAuthError, isAuthError, user } = useAuth();
     // Get current date and time in required format
     const getCurrentDateTime = () => {
         const now = new Date();
@@ -171,6 +171,9 @@ const LostAndFound = () => {
     const [selectedItem, setSelectedItem] = useState(null);
 
     const MAX_DESCRIPTION_LENGTH = 300; // Add this constant
+    const MAX_LOCATION_LENGTH = 150; // Add this constant
+
+    const [includePhone, setIncludePhone] = useState(true);  // Add this state
 
     // Update CharacterCount styles for label alignment
     const CharacterCount = ({ current, max }) => (
@@ -250,8 +253,12 @@ const LostAndFound = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'description' && value.length > MAX_DESCRIPTION_LENGTH) {
-            return; // Don't update if exceeding limit
+        // Add length checks for each field
+        if (
+            (name === 'description' && value.length > MAX_DESCRIPTION_LENGTH) ||
+            ((name === 'whereFound' || name === 'whereToFind') && value.length > MAX_LOCATION_LENGTH)
+        ) {
+            return;
         }
         setFormData(prev => ({
             ...prev,
@@ -270,6 +277,11 @@ const LostAndFound = () => {
                 return;
             }
 
+            const dataToSend = {
+                ...formData,
+                includePhone: includePhone  // Add this to the form data
+            };
+
             const response = await fetch(`${API_BASE_URL}/api/lost-and-found/items`, {
                 method: 'POST',
                 headers: {
@@ -278,7 +290,7 @@ const LostAndFound = () => {
                     'Accept': 'application/json'
                 },
                 credentials: 'include',
-                body: JSON.stringify(formData),
+                body: JSON.stringify(dataToSend),
             });
 
             if (!response.ok) {
@@ -570,7 +582,8 @@ const LostAndFound = () => {
             <div className={`transition-all duration-300 ease-out 
                 ${isCompact ? 'pt-20' : 'pt-28'} px-4 space-y-8`}>
                 {/* Search Card - Add animation */}
-                <motion.div variants={itemVariants} className="card">
+                <motion.div variants={itemVariants} className="card bg-gray-800/95 backdrop-blur-sm rounded-xl p-6 
+                    border border-white/10 shadow-xl">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-blue-300">
@@ -631,7 +644,8 @@ const LostAndFound = () => {
                 </motion.div>
 
                 {/* Items List Card - Add animation */}
-                <motion.div variants={itemVariants} className="card">
+                <motion.div variants={itemVariants} className="card bg-gray-800/95 backdrop-blur-sm rounded-xl p-6 
+                    border border-white/10 shadow-xl">
                     <h3 className="text-xl font-semibold mb-6 text-blue-300">
                         Recent Found Items
                     </h3>
@@ -747,7 +761,7 @@ const LostAndFound = () => {
                                 className="w-full max-w-md pointer-events-auto"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className={`bg-gray-800 rounded-2xl w-full p-6 shadow-xl
+                                <div className={`bg-gray-800/95 backdrop-blur-sm rounded-xl w-full p-6 shadow-xl
                                     border border-white/10 transition-all duration-200
                                     ${isClosing ? 'animate-slide-up' : 'animate-slide-down'}`}
                                 >
@@ -808,28 +822,64 @@ const LostAndFound = () => {
 
                                         {/* Location section */}
                                         <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-300">Location Information</label>
-                                            <input
-                                                type="text"
-                                                name="whereFound"
-                                                autoComplete="off"
-                                                value={formData.whereFound}
-                                                onChange={handleInputChange}
-                                                placeholder="Where was it found? (Required)"
-                                                className="input-field input-field-required"
-                                                required
-                                            />
-                                            <input
-                                                type="text"
-                                                name="whereToFind"
-                                                autoComplete="off"
-                                                value={formData.whereToFind}
-                                                onChange={handleInputChange}
-                                                placeholder="Where to collect? (Required)"
-                                                className="input-field input-field-required"
-                                                required
-                                            />
+                                            <div className="space-y-4">
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="block text-sm font-medium text-gray-300">Found Location</label>
+                                                        <CharacterCount
+                                                            current={formData.whereFound.length}
+                                                            max={MAX_LOCATION_LENGTH}
+                                                        />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        name="whereFound"
+                                                        autoComplete="off"
+                                                        value={formData.whereFound}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Where was it found? (Required)"
+                                                        className="input-field input-field-required"
+                                                        required
+                                                        maxLength={MAX_LOCATION_LENGTH}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="block text-sm font-medium text-gray-300">Collection Location</label>
+                                                        <CharacterCount
+                                                            current={formData.whereToFind.length}
+                                                            max={MAX_LOCATION_LENGTH}
+                                                        />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        name="whereToFind"
+                                                        autoComplete="off"
+                                                        value={formData.whereToFind}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Where to collect? (Required)"
+                                                        className="input-field input-field-required"
+                                                        required
+                                                        maxLength={MAX_LOCATION_LENGTH}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {user?.phone && (
+                                            <div className="flex items-center gap-3 pt-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="includePhone"
+                                                    checked={includePhone}
+                                                    onChange={(e) => setIncludePhone(e.target.checked)}
+                                                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-orange-600 focus:ring-orange-600 focus:ring-offset-gray-800"
+                                                />
+                                                <label htmlFor="includePhone" className="text-sm text-gray-300">
+                                                    Include my contact number ({user.phone})
+                                                </label>
+                                            </div>
+                                        )}
 
                                         <button type="submit" className="btn-primary w-full mt-6">
                                             Post Found Item
@@ -847,77 +897,94 @@ const LostAndFound = () => {
                 {selectedItem && (
                     <>
                         <motion.div
-                            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
-                            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                            transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-black/50 z-[100]"
+                            variants={overlayVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
                             onClick={() => setSelectedItem(null)}
                         />
                         <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                transition={{ duration: 0.2 }}
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 className="w-full max-w-lg pointer-events-auto"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-xl 
-                             border border-white/10">
-                                    <div className="p-6 border-b border-white/10">
+                                <div className="bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-xl 
+                             border border-white/10 overflow-hidden">
+                                    <div className="px-6 py-5 border-b border-white/10">
                                         <div className="flex justify-between items-start">
                                             <h3 className="text-xl font-semibold text-blue-300">
                                                 Item Details
                                             </h3>
                                             <button
                                                 onClick={() => setSelectedItem(null)}
-                                                className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                                                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg -mr-2 -mt-2"
                                             >
                                                 <span className="sr-only">Close</span>
                                                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414 1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                                 </svg>
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="px-6 py-4 max-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
-                                        <div className="space-y-6">
-                                            <div>
-                                                <h4 className="text-lg font-medium text-white">
-                                                    {selectedItem.name}
-                                                </h4>
-                                            </div>
+
+                                    <div className="divide-y divide-white/5">
+                                        <div className="px-6 py-4">
+                                            <h4 className="text-lg font-medium text-white mb-3">
+                                                {selectedItem.name}
+                                            </h4>
                                             <div className="space-y-2">
                                                 <label className="text-sm text-gray-400">Description</label>
-                                                <p className="text-gray-100 text-base leading-relaxed whitespace-pre-wrap">
+                                                <p className="text-gray-100 text-base leading-relaxed whitespace-pre-wrap bg-white/5 rounded-lg p-3">
                                                     {selectedItem.description}
                                                 </p>
                                             </div>
-                                            <div className="grid gap-4 text-gray-300">
-                                                <div className="space-y-1">
+                                        </div>
+
+                                        <div className="px-6 py-4 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
                                                     <label className="text-sm text-gray-400">Found Location</label>
-                                                    <p>{selectedItem.whereFound}</p>
+                                                    <p className="text-gray-200">{selectedItem.whereFound}</p>
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="space-y-1.5">
                                                     <label className="text-sm text-gray-400">Collection Location</label>
-                                                    <p>{selectedItem.whereToFind}</p>
+                                                    <p className="text-gray-200">{selectedItem.whereToFind}</p>
                                                 </div>
-                                                <div className="space-y-1">
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
                                                     <label className="text-sm text-gray-400">Found Date & Time</label>
-                                                    <p>{new Date(selectedItem.whenFound).toLocaleDateString()} at {selectedItem.whenFoundTime}</p>
+                                                    <p className="text-gray-200">
+                                                        {new Date(selectedItem.whenFound).toLocaleDateString()} at {selectedItem.whenFoundTime}
+                                                    </p>
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="space-y-1.5">
                                                     <label className="text-sm text-gray-400">Posted By</label>
-                                                    <p>{selectedItem.reportedBy?.name || 'Unknown'}</p>
+                                                    <div className="space-y-1">
+                                                        <p className="text-gray-200">{selectedItem.reportedBy?.name || 'Unknown'}</p>
+                                                        {selectedItem.reportedBy?.phone && (
+                                                            <a className="text-sm text-gray-400" target='_blank' href={`https://wa.me/91${selectedItem.reportedBy.phone}`}>
+                                                                Contact: {selectedItem.reportedBy.phone}
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                {selectedItem.tags && selectedItem.tags.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm text-gray-400">Tags</label>
+                                            </div>
+
+                                            {selectedItem.tags && selectedItem.tags.length > 0 && (
+                                                <div className="space-y-2 pt-2">
+                                                    <label className="text-sm text-gray-400">Tags</label>
+                                                    <div className="bg-white/5 rounded-lg p-3">
                                                         <TagList tags={selectedItem.tags} maxVisible={8} expandable={true} />
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
     const [user, setUser] = useState(
         skipAuth
-            ? { name: 'Dev User', enrollmentNo: '21124001' }
+            ? { name: 'Dev User', enrollmentNo: '21124001', phone: '1234567890' }
             : null
     );
 
@@ -73,6 +73,9 @@ export const AuthProvider = ({ children }) => {
 
     // Add new method to handle auth errors
     const handleAuthError = () => {
+        // Update to navigate to login while preserving return path
+        const currentPath = window.location.pathname;
+        localStorage.setItem('returnTo', currentPath);
         logout();
         window.location.href = '/login';
     };
