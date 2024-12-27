@@ -9,6 +9,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import lostAndFoundRoutes from './routes/lostAndFoundRoutes.js';
+import catsRoutes from './routes/catsRoutes.js'
 
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -78,6 +79,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/whoami", userRoutes);
 app.use('/api/lost-and-found', lostAndFoundRoutes);
 app.use('/api/parcel', parcelRoutes);
+app.use('/api/cats', catsRoutes);
 
 app.use('*', (req, res) => {
   res.redirect('/');
