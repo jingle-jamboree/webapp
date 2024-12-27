@@ -42,4 +42,10 @@ const lostAndFoundSchema = new mongoose.Schema({
     collection: 'lostandfounds'
 });
 
+lostAndFoundSchema.index({
+    name: 'text',
+    description: 'text',
+    tags: 'text'
+});
+
 export default mongoose.model('LostAndFound', lostAndFoundSchema);

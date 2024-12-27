@@ -20,7 +20,7 @@ const Sidenav = ({ isOpen, onClose, user, onLogout }) => {
 
             {/* Sidenav */}
             <nav className={`fixed left-0 top-0 bottom-0 w-64 bg-gray-900/95 backdrop-blur-md z-50
-                border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-20 pt-6
+                border-r border-white/10 transform transition-transform duration-300 ease-in-out 
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
                 <div className="p-4 flex flex-col h-full">

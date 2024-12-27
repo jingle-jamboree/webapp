@@ -62,12 +62,12 @@ export default function HomePage() {
                 className="max-w-4xl mx-auto"
                 variants={itemVariants}
             >
-                <div className="grid grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                     {features.map((feature) => (
                         <motion.button
                             key={feature.id}
                             onClick={() => navigate(feature.path)}
-                            className="feature-card group aspect-[4/3] sm:aspect-square"
+                            className="feature-card group aspect-square sm:aspect-[4/3] sm:max-w-[240px]"
                             variants={itemVariants}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}

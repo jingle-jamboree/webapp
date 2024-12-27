@@ -63,14 +63,16 @@ const generateTitleAndTags = async (item) => {
             messages: [
                 {
                     role: "system",
-                    content: `Generate a title and tags for lost items.
-    Output format: {"title": "3-4 word descriptive title", "tags": ["3-5 relevant tags"]}
+                    content: `You are a helper that generates JSON formatted titles and tags for lost items.
+    You must respond with valid JSON in the following format:
+    {"title": "3-4 word descriptive title", "tags": ["3-5 relevant tags"]}
 
     Rules:
     - Title should be clear and concise
     - Tags should be relevant search terms
     - Capitalize first letter of all words
     - Use only information from the description
+    - Response must be valid JSON
 
     Example:
     Input: "black phone found near library"
@@ -88,6 +90,8 @@ const generateTitleAndTags = async (item) => {
             response_format: { type: "json_object" },
             stop: null
         });
+
+        // Rest of the function remains the same
         const response = JSON.parse(completion.choices[0]?.message?.content);
         let title = response["title"].replace(/['"]/g, "") || fallbackTitleGeneration(item);
         let tags = response["tags"] || fallbackTagGeneration(item);
@@ -96,11 +100,10 @@ const generateTitleAndTags = async (item) => {
         return { title, tags };
     } catch (error) {
         console.error('Error with Groq API:', error);
-        const fallback = {
+        return {
             title: fallbackTitleGeneration(item) || "Lost Item",
             tags: fallbackTagGeneration(item) || []
         };
-        return fallback;
     }
 };
 
@@ -115,10 +118,27 @@ const fallbackTitleGeneration = (item) => {
  */
 export const getItems = async (req, res) => {
     try {
-        const { lastId, limit = 6 } = req.query;
-        const query = lastId ? { _id: { $lt: lastId } } : {};
+        const { lastId, limit = 6, query, date } = req.query;
+        let mongoQuery = lastId ? { _id: { $lt: lastId } } : {};
 
-        const items = await LostAndFound.find(query)
+        // Add search conditions if query exists
+        if (query) {
+            const searchRegex = new RegExp(query, 'i');
+            mongoQuery.$or = [
+                { name: searchRegex },
+                { description: searchRegex },
+                { whereFound: searchRegex },
+                { whereToFind: searchRegex },
+                { tags: searchRegex }
+            ];
+        }
+
+        // Add date filter if specified
+        if (date) {
+            mongoQuery.whenFound = date;
+        }
+
+        const items = await LostAndFound.find(mongoQuery)
             .sort({ _id: -1 })
             .limit(parseInt(limit) + 1)
             .populate('reportedBy', 'name enroll phone'); // Change 'mobile' to 'phone'

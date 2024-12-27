@@ -16,7 +16,6 @@
 }
 
 @layer components {
-
   /* Core Styles */
   .input-field {
     @apply w-full px-4 py-3 bg-gray-800/80 border border-gray-700/80 rounded-lg outline-none transition-all duration-300 text-[15px] placeholder:text-gray-500 focus:border-blue-500 focus:bg-gray-800;
@@ -127,15 +126,36 @@
   .animate-slide-up {
     animation: slide-up 0.2s ease-out forwards;
   }
+
+  /* Desktop-specific enhancements */
+  @media (min-width: 768px) {
+    .card {
+      @apply transition-all duration-300;
+      &:hover {
+        @apply shadow-xl shadow-black/20 border-white/20;
+      }
+    }
+
+    .input-field {
+      @apply md:text-base;
+      &:hover:not(:focus) {
+        @apply border-white/20;
+      }
+    }
+
+    .btn-primary {
+      @apply md:text-base hover:shadow-xl hover:shadow-blue-900/20;
+    }
+  }
 }
 
 .mapboxgl-popup-content {
   /* background: unset */
   @apply bg-gray-800 text-gray-200 p-3 rounded-lg backdrop-blur-sm border border-white/10
-  /* bg-gray-800/90 text-gray-200 p-3 rounded-lg backdrop-blur-sm border border-white/10 */
+  /* bg-gray-800/90 text-gray-200 p-3 rounded-lg backdrop-blur-sm border border-white/10 */;
 }
 
-.mapboxgl-popup-tip{
+.mapboxgl-popup-tip {
   border-bottom-color: rgb(31 41 55 / var(--tw-bg-opacity, 1)) !important;
   border-top-color: rgb(31 41 55 / var(--tw-bg-opacity, 1)) !important;
 }
