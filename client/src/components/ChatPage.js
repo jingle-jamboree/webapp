@@ -66,7 +66,7 @@ const ChatPage = () => {
   // Animate each message
   const messageVariants = {
     hidden: { opacity: 0, y: 10 },
-    visible: { 
+    visible: {
       opacity: 1,
       y: 0,
       transition: { duration: 0.2 }
@@ -75,7 +75,6 @@ const ChatPage = () => {
   };
 
   const isMyMessage = (msg) => {
-    console.log(msg, user)
     return msg.sender === user.enroll
   };
 
@@ -84,8 +83,8 @@ const ChatPage = () => {
       <div className="content-container relative max-w-2xl mx-auto px-4 pt-24 pb-16">
         {/* Header row */}
         <div className="flex items-center mb-6">
-          <button 
-            onClick={handleBack} 
+          <button
+            onClick={handleBack}
             className="text-gray-300 hover:text-white transition-colors p-2"
           >
             <ArrowLeftIcon className="w-6 h-6" />
@@ -105,16 +104,14 @@ const ChatPage = () => {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className={`flex ${
-                  isMyMessage(msg) ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${isMyMessage(msg) ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 <div
-                  className={`max-w-[70%] p-3 rounded-lg ${
-                    isMyMessage(msg)
+                  className={`max-w-[70%] p-3 rounded-lg ${isMyMessage(msg)
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-200'
-                  }`}
+                    }`}
                 >
                   {/* If it's not my message, show the sender's name */}
                   {!isMyMessage(msg) && (

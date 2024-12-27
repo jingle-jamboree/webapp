@@ -104,7 +104,6 @@ export function getSocketIdByUser(userId) {
 }
 
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
 
   const userId = socket.handshake.query.userId;
   if (userId) {
@@ -149,7 +148,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
 
     for (const [uid, sid] of userSocketMap.entries()) {
       if (sid === socket.id) {

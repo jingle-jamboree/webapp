@@ -21,15 +21,23 @@ const tokenizer = new natural.WordTokenizer();
  * @param {Object} item - Lost item object
  * @returns {string[]} Array of tags
  */
-const fallbackTagGeneration = (text) => {
+const fallbackTagGeneration = (input) => {
+    // Handle both string and object inputs
+    const text = typeof input === 'string'
+        ? input
+        : (input?.name || input?.description || '');
+
+    if (!text || typeof text !== 'string') {
+        return [];
+    }
+
     // Combine all text fields
     const details = text.toLowerCase();
 
-    // Tokenize and filter words
+    // Rest of the function remains the same
     const tokens = tokenizer.tokenize(details);
     const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
 
-    // Filter unique meaningful words
     const tags = [...new Set(tokens)]
         .filter(word =>
             word.length > 2 &&
@@ -37,17 +45,17 @@ const fallbackTagGeneration = (text) => {
             !/^\d+$/.test(word)
         );
 
-    return tags.slice(0, 5); // Limit to 5 tags
+    return tags.slice(0, 5);
 };
 
 const generateTitleAndTags = async (item) => {
     const groq = getGroqClient();
     if (!groq) {
-        console.log('Using fallback title generation (GROQ not available)');
-        return {
-            title: fallbackTitleGeneration(item),
-            tags: fallbackTagGeneration(item)
+        const fallback = {
+            title: fallbackTitleGeneration(item) || "Lost Item",
+            tags: fallbackTagGeneration(item) || []
         };
+        return fallback;
     }
 
     try {
@@ -55,31 +63,18 @@ const generateTitleAndTags = async (item) => {
             messages: [
                 {
                     role: "system",
-                    content: `You are a precise item categorization assistant. Your task is to:
-1. Generate a clear, concise title (3-6 words) that accurately describes the item
-2. Extract relevant tags (3-5 tags) that will help in searching for this item
+                    content: `Generate a title and tags for lost items.
+    Output format: {"title": "3-4 word descriptive title", "tags": ["3-5 relevant tags"]}
 
-Rules for title:
-- Must be descriptive but concise
-- Start with key identifying features (color, brand, type)
-- No quotes or special characters
-- Always capitalize first letter of each word
+    Rules:
+    - Title should be clear and concise
+    - Tags should be relevant search terms
+    - Capitalize first letter of all words
+    - Use only information from the description
 
-Rules for tags:
-- Include item type, color, brand if mentioned
-- Only use words present in or directly implied by the description
-- No made-up or speculative tags
-- Keep tags simple and searchable
-- Always capitalize first letter of each tag
-
-Format output as valid JSON: {"title": "string", "tags": ["string"]}
-
-Examples:
-Input: "Found a black Samsung phone with cracked screen near library"
-Output: {"title": "Black Samsung Phone Cracked", "tags": ["Phone", "Samsung", "Black", "Damaged"]}
-
-Input: "Nike sports shoes blue color size 9 found in gym"
-Output: {"title": "Blue Nike Sports Shoes", "tags": ["Shoes", "Nike", "Blue", "Sports"]}`
+    Example:
+    Input: "black phone found near library"
+    Output: {"title": "Black Phone Found", "tags": ["Phone", "Black", "Electronics"]}`
                 },
                 {
                     role: "user",
@@ -88,8 +83,7 @@ Output: {"title": "Blue Nike Sports Shoes", "tags": ["Shoes", "Nike", "Blue", "S
             ],
             model: "llama-3.1-8b-instant",
             max_tokens: 1024,
-            top_p: 1,
-            temperature: 0.7, // Add temperature for slightly more controlled output
+            temperature: 0.7,
             stream: false,
             response_format: { type: "json_object" },
             stop: null
@@ -102,10 +96,11 @@ Output: {"title": "Blue Nike Sports Shoes", "tags": ["Shoes", "Nike", "Blue", "S
         return { title, tags };
     } catch (error) {
         console.error('Error with Groq API:', error);
-        return {
-            title: fallbackTitleGeneration(item),
-            tags: fallbackTagGeneration(item)
+        const fallback = {
+            title: fallbackTitleGeneration(item) || "Lost Item",
+            tags: fallbackTagGeneration(item) || []
         };
+        return fallback;
     }
 };
 
