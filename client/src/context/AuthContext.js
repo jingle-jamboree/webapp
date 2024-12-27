@@ -73,6 +73,9 @@ export const AuthProvider = ({ children }) => {
 
     // Add new method to handle auth errors
     const handleAuthError = () => {
+        // Update to navigate to login while preserving return path
+        const currentPath = window.location.pathname;
+        localStorage.setItem('returnTo', currentPath);
         logout();
         window.location.href = '/login';
     };
