@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiY29kZWxpZiIsImEiOiJjbTU0MXhjYzUwZG9lMm1yM3d3cHlhdDd0In0.bMk6QA-PoSH9spl-qxGM_w';
 
+const ZOOM_MIN = 17
+const ZOOM_MAX = 20
 // Campus bounding box corners [lng, lat]
 const campusBounds = [
   [77.37131841222863, 28.629504764974202], // SW
@@ -29,7 +31,7 @@ export default function CatSpotter() {
   const [viewState, setViewState] = useState({
     longitude: 77.3725,
     latitude: 28.6300,
-    zoom: 18,
+    zoom: ZOOM_MIN,
   });
 
   // Panning/zoom bounding
@@ -40,8 +42,8 @@ export default function CatSpotter() {
     const [maxLng, maxLat] = campusBounds[1];
 
     // 1) Clamp zoom
-    if (vs.zoom < 18) vs.zoom = 18;  // don't let them zoom out below ~15
-    if (vs.zoom > 20) vs.zoom = 20;  // or in too close beyond ~20
+    if (vs.zoom < ZOOM_MIN) vs.zoom = ZOOM_MIN;  // don't let them zoom out below ~15
+    if (vs.zoom > ZOOM_MAX) vs.zoom = ZOOM_MAX;  // or in too close beyond ~20
 
     // 2) Clamp longitude
     if (vs.longitude < minLng) vs.longitude = minLng;
@@ -203,8 +205,8 @@ export default function CatSpotter() {
           mapStyle="mapbox://styles/codelif/cm56ogt9600fx01sffjwe0p0n/draft"
           mapboxAccessToken={MAPBOX_TOKEN}
           // Additional safety if you want:
-          minZoom={18}
-          maxZoom={20}
+          minZoom={ZOOM_MIN}
+          maxZoom={ZOOM_MAX}
         >
           {/* Navigation controls (zoom in/out, compass) */}
           <NavigationControl position="top-left" />
