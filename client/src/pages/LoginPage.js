@@ -43,7 +43,7 @@ const LoginPage = () => {
                 opacity: 1,
                 filter: 'blur(0px)'
             }}
-            className="min-h-screen flex items-center justify-center px-4 relative"
+            className="min-h-screen flex items-center justify-center px-4 relative overflow-x-hidden"
         >
             {/* Background glow effects with animation */}
             <motion.div
@@ -52,7 +52,7 @@ const LoginPage = () => {
                     opacity: [0.1, 0],
                     transition: { duration: 0.8 }
                 } : {}}
-                className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[128px] opacity-10"
+                className="fixed top-[25vh] left-[25vw] w-[50vw] h-[50vw] max-w-[24rem] max-h-[24rem] bg-blue-500 rounded-full filter blur-[128px] opacity-10"
             />
             <motion.div
                 animate={isAnimatingOut ? {
@@ -60,14 +60,14 @@ const LoginPage = () => {
                     opacity: [0.1, 0],
                     transition: { duration: 0.8 }
                 } : {}}
-                className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-[128px] opacity-10"
+                className="fixed bottom-[25vh] right-[25vw] w-[50vw] h-[50vw] max-w-[24rem] max-h-[24rem] bg-purple-500 rounded-full filter blur-[128px] opacity-10"
             />
 
             <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative bg-gray-900 max-w-md w-full p-8 sm:p-10 rounded-2xl border border-white/10
+                className="relative bg-gray-900 w-full mx-4 max-w-md p-6 sm:p-10 rounded-2xl border border-white/10
                     shadow-[0_0_60px_-15px_rgba(0,0,0,0.5)]"
             >
                 <motion.div
