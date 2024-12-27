@@ -3,135 +3,143 @@
 @tailwind utilities;
 
 @layer base {
-    body {
-        @apply bg-[#0B0F1A] text-white relative min-h-screen overflow-x-hidden;
-    }
+  body {
+    @apply bg-[#0B0F1A] text-white relative min-h-screen overflow-x-hidden;
+  }
 
-    /* Simplified noise overlay */
-    body::before {
-        content: "";
-        @apply fixed inset-0 opacity-5 pointer-events-none z-[1];
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
+  /* Simplified noise overlay */
+  body::before {
+    content: "";
+    @apply fixed inset-0 opacity-5 pointer-events-none z-[1];
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
 }
 
 @layer components {
-    /* Core Styles */
-    .input-field {
-        @apply w-full px-4 py-3 bg-gray-800/80 border border-gray-700/80 
-        rounded-lg outline-none transition-all duration-300
-        text-[15px] placeholder:text-gray-500
-        focus:border-blue-500 focus:bg-gray-800;
+
+  /* Core Styles */
+  .input-field {
+    @apply w-full px-4 py-3 bg-gray-800/80 border border-gray-700/80 rounded-lg outline-none transition-all duration-300 text-[15px] placeholder:text-gray-500 focus:border-blue-500 focus:bg-gray-800;
+  }
+
+  .input-field-required {
+    @apply placeholder:text-gray-400;
+  }
+
+  .input-field-optional {
+    @apply placeholder:text-gray-600;
+  }
+
+  /* Date/Time Input Styles - Remove default icons and improve visibility */
+  input[type="date"],
+  input[type="time"] {
+    &::-webkit-calendar-picker-indicator {
+      @apply hidden;
     }
 
-    .input-field-required {
-        @apply placeholder:text-gray-400;
+    &::-webkit-datetime-edit {
+      @apply h-full flex items-center text-gray-300;
     }
 
-    .input-field-optional {
-        @apply placeholder:text-gray-600;
+    &::-webkit-datetime-edit-fields-wrapper {
+      @apply pl-2;
     }
 
-    /* Date/Time Input Styles - Remove default icons and improve visibility */
-    input[type="date"],
-    input[type="time"] {
-        &::-webkit-calendar-picker-indicator {
-            @apply hidden;
-        }
-
-        &::-webkit-datetime-edit {
-            @apply h-full flex items-center text-gray-300;
-        }
-
-        &::-webkit-datetime-edit-fields-wrapper {
-            @apply pl-2;
-        }
-
-        /* Make the text more visible when filled */
-        &::-webkit-datetime-edit-text,
-        &::-webkit-datetime-edit-month-field,
-        &::-webkit-datetime-edit-day-field,
-        &::-webkit-datetime-edit-year-field,
-        &::-webkit-datetime-edit-hour-field,
-        &::-webkit-datetime-edit-minute-field,
-        &::-webkit-datetime-edit-ampm-field {
-            @apply text-gray-300;
-        }
-
-        /* Style for placeholder state */
-        &:not(:valid)::-webkit-datetime-edit {
-            @apply text-gray-400;
-        }
+    /* Make the text more visible when filled */
+    &::-webkit-datetime-edit-text,
+    &::-webkit-datetime-edit-month-field,
+    &::-webkit-datetime-edit-day-field,
+    &::-webkit-datetime-edit-year-field,
+    &::-webkit-datetime-edit-hour-field,
+    &::-webkit-datetime-edit-minute-field,
+    &::-webkit-datetime-edit-ampm-field {
+      @apply text-gray-300;
     }
 
-    .btn-primary {
-        @apply w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 
-        text-white font-medium rounded-lg transition-all duration-300 text-[15px]
-        disabled:opacity-50 disabled:cursor-not-allowed
-        active:from-blue-600 active:to-blue-700;
+    /* Style for placeholder state */
+    &:not(:valid)::-webkit-datetime-edit {
+      @apply text-gray-400;
+    }
+  }
+
+  .btn-primary {
+    @apply w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg transition-all duration-300 text-[15px] disabled:opacity-50 disabled:cursor-not-allowed active:from-blue-600 active:to-blue-700;
+  }
+
+  .card {
+    @apply bg-gray-800/90 rounded-lg p-6 border border-white/10;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
+  }
+
+  /* Features Grid */
+  .feature-card {
+    @apply relative overflow-hidden rounded-xl backdrop-blur-sm bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/[0.08] transition-all duration-300 ease-out active:scale-95 active:bg-white/10 active:border-white/20;
+  }
+
+  .feature-inner {
+    @apply relative z-10 h-full w-full p-6 flex flex-col items-center justify-center gap-4;
+  }
+
+  .feature-icon {
+    @apply text-4xl mb-2 transition-transform;
+  }
+
+  .feature-name {
+    @apply text-lg font-medium text-gray-300 text-center;
+  }
+
+  .card-grid {
+    @apply grid grid-cols-2 gap-4;
+  }
+
+  /* Animations */
+  @keyframes slideDown {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
     }
 
-    .card {
-        @apply bg-gray-800/90 rounded-lg p-6 border border-white/10;
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(0);
+      opacity: 1;
     }
 
-    .gradient-text {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
+    to {
+      transform: translateY(20px);
+      opacity: 0;
     }
+  }
 
-    /* Features Grid */
-    .feature-card {
-        @apply relative overflow-hidden rounded-xl backdrop-blur-sm
-        bg-gradient-to-b from-white/5 to-white/[0.02]
-        border border-white/[0.08]
-        transition-all duration-300 ease-out
-        active:scale-95 active:bg-white/10 active:border-white/20;
-    }
+  .animate-slide-down {
+    animation: slideDown 0.2s ease-out;
+  }
 
-    .feature-inner {
-        @apply relative z-10 h-full w-full p-6
-        flex flex-col items-center justify-center gap-4;
-    }
+  .animate-slide-up {
+    animation: slide-up 0.2s ease-out forwards;
+  }
+}
 
-    .feature-icon {
-        @apply text-4xl mb-2 transition-transform;
-    }
+.mapboxgl-popup-content {
+  /* background: unset */
+  @apply bg-gray-800 text-gray-200 p-3 rounded-lg backdrop-blur-sm border border-white/10
+  /* bg-gray-800/90 text-gray-200 p-3 rounded-lg backdrop-blur-sm border border-white/10 */
+}
 
-    .feature-name {
-        @apply text-lg font-medium text-gray-300 text-center;
-    }
+.mapboxgl-popup-tip{
+  border-bottom-color: rgb(31 41 55 / var(--tw-bg-opacity, 1)) !important;
+  border-top-color: rgb(31 41 55 / var(--tw-bg-opacity, 1)) !important;
+}
 
-    .card-grid {
-        @apply grid grid-cols-2 gap-4;
-    }
-
-    /* Animations */
-    @keyframes slideDown {
-        from {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slide-up {
-        from {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-    }
-
-    .animate-slide-down {
-        animation: slideDown 0.2s ease-out;
-    }
-    .animate-slide-up {
-        animation: slide-up 0.2s ease-out forwards;
-    }
+.mapboxgl-popup-close-button {
+  display: none;
 }

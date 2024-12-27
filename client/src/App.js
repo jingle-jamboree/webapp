@@ -7,6 +7,7 @@ import LostAndFound from './components/LostAndFound';
 import PickMyParcel from './components/PickMyParcel';
 import Layout from './components/Layout';
 import ChatPage from './components/ChatPage';
+import CatSpotter from './components/CatSpotter'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="lost-and-found" element={<LostAndFound />} />
             <Route path='parcel' element={<PickMyParcel />} />
             <Route path="chat/:roomId" element={<ChatPage />} />
+            <Route path="cats" element={<CatSpotter />} />
             {/* ...other routes... */}
           </Route>
         </Routes>
