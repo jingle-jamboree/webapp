@@ -3,7 +3,7 @@ import { PlusIcon, ChevronDownIcon, CalendarIcon, ClockIcon, ArrowUpIcon } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 const cardVariants = {
     hidden: {

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext(null);
 const PORT = process.env.BACKEND_PORT || 5000;
-const URL = process.env.REACT_BACKEND_API_URL || 'http://localhost:' + PORT;
+const URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 // Add this utility function at the top level
 export const isAuthError = (error) => {
